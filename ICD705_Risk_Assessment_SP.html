@@ -1,0 +1,3812 @@
+<!DOCTYPE html>
+<p hidden>
+  Project Name: ICD-705 Risk Assessment and Risk Calculator
+  Author: Christopher Lister //HTML/Risk Questionnaire/Calculation// 
+  Adam Holden //Risk Assessment Form//
+  License: Free to use with permission.
+  Contact: christopher.lister@singularitysg.com & adam.holden@singulartysg.com
+  Description: This HTML file is provided without warranty or for use within the community.
+               Modification requires prior permission.</p>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>ICD-705 Facility Risk Assessment (Secure Edition)</title>
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.12.1/html2pdf.bundle.min.js"
+            integrity="sha512-D25Z8/1q2z65ZpJ3NzY6XiPZfwjhbv34OTQHDIZd+KPK+uWCovGt+fMkSzW8ArzCMFUgZt6Cdu7qoXNuy6a2GA=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+    <script>
+        // Fix html2canvas color parsing error in Safari
+        // Safari uses CSS color() function (e.g., color(display-p3 ...)) which
+        // html2canvas does not support, causing a thrown Error that aborts PDF generation.
+        // This patch applies multiple layers of defense:
+        // 1. Intercepts getComputedStyle during PDF generation to sanitize color() values
+        // 2. Wraps html2pdf to catch and retry if the error still occurs
+        (function() {
+            window._pdfGenerating = false;
+
+            // Layer 1: Patch getComputedStyle to replace color() with hex fallback
+            var origGetCS = window.getComputedStyle;
+            window.getComputedStyle = function() {
+                var style = origGetCS.apply(window, arguments);
+                if (!window._pdfGenerating) return style;
+                return new Proxy(style, {
+                    get: function(target, prop) {
+                        if (prop === 'length' || prop === 'parentRule' || prop === 'cssFloat') {
+                            return target[prop];
+                        }
+                        if (typeof prop === 'symbol') return target[prop];
+                        var val;
+                        try { val = target[prop]; } catch(e) { return ''; }
+                        if (typeof val === 'function') {
+                            return function() {
+                                var result = val.apply(target, arguments);
+                                if (typeof result === 'string' && result.indexOf('color(') !== -1) {
+                                    return result.replace(/color\([^)]*\)/g, 'rgb(0, 0, 0)');
+                                }
+                                return result;
+                            };
+                        }
+                        if (typeof val === 'string' && val.indexOf('color(') !== -1) {
+                            return val.replace(/color\([^)]*\)/g, 'rgb(0, 0, 0)');
+                        }
+                        return val;
+                    }
+                });
+            };
+
+            // Layer 2: Patch CSSStyleDeclaration.getPropertyValue
+            var origGetPV = CSSStyleDeclaration.prototype.getPropertyValue;
+            CSSStyleDeclaration.prototype.getPropertyValue = function(prop) {
+                var val = origGetPV.call(this, prop);
+                if (window._pdfGenerating && typeof val === 'string' && val.indexOf('color(') !== -1) {
+                    return val.replace(/color\([^)]*\)/g, 'rgb(0, 0, 0)');
+                }
+                return val;
+            };
+        })();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.3;
+            background: transparent;
+            color: #000;
+            margin: 5px 0;
+        }
+
+        .classification-banner {
+            display: block;
+            background-color: #000000;
+            color: #ffffff;
+            text-align: center;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 12pt;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            line-height: 1.2;
+            -webkit-text-fill-color: #ffffff;
+        }
+
+        .classification-footer {
+            background: #000;
+            color: #fff;
+            text-align: center;
+            padding: 8px 10px;
+            font-weight: bold;
+            font-size: 12pt;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            line-height: 1.2;
+        }
+
+        .container {
+            max-width: 7.0in;
+            margin: 20px auto;
+            padding: 0;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            background: transparent;
+        }
+
+        .page {
+            page-break-after: always;
+            break-after: always;
+            position: relative;
+            min-height: auto;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10pt;
+        }
+
+        /* COVER PAGE */
+        .cover-page {
+            padding: 10px;
+            position: relative;
+            min-height: 7.5in;
+        }
+
+        .cover-title {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .cover-title h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .cover-prepared {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 12pt;
+        }
+
+        .cover-prepared div {
+            margin: 6px 0;
+        }
+
+        .cover-prepared input[type="text"],
+        .cover-date input[type="text"] {
+            border: 1px solid #000;
+        }
+
+        .cover-date {
+            text-align: center;
+            margin: 5px 0;
+            font-size: 12pt;
+        }
+
+        .classification-details-box {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            border: 2px solid #000;
+            padding: 10px;
+            background: transparent;
+            font-size: 9pt;
+            width: 3.5in;
+        }
+
+        .classification-details-box .detail-line {
+            margin: 6px 0;
+            word-wrap: break-word;
+            line-height: 1.3;
+            text-align: left;
+        }
+
+        .classification-details-box strong {
+            display: inline-block;
+            min-width: 130px;
+        }
+
+        .reset-form-button {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 9pt;
+            cursor: pointer;
+        }
+
+        .button-group-bottom-left {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25in;
+        }
+
+        /* SECTION STYLES */
+        .section-header {
+            background: #d3d3d3;
+            border: 2px solid #000;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .cover-header {
+            background: #d3d3d3;
+            border: 2px solid #000;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 20pt;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .section-row {
+            border: 1px solid #000;
+            padding: 5px;
+            margin-bottom: 1px;
+            min-height: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-row-large {
+            border: 1px solid #000;
+            padding: 5px;
+            margin-bottom: 1px;
+            min-height: 150px;
+            page-break-inside: avoid;
+        }
+
+        .section-row-xlarge {
+            border: 1px solid #000;
+            padding: 5px;
+            margin-bottom: 1px;
+            min-height: 500px;
+            page-break-inside: avoid;
+        }
+
+        .section-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .section-instruction {
+            font-style: italic;
+            font-size: 9pt;
+            margin-top: 5px;
+            color: #333;
+            border: 1px solid #333;
+            padding: 8px;
+            background: #f9f9f9;
+        }
+
+        table.info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        table.info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 10pt;
+        }
+
+        table.info-table td.label {
+            background: #d3d3d3;
+            font-weight: bold;
+            width: 30%;
+        }
+
+        /* FILLABLE INPUT FIELDS */
+        input[type="text"],
+        textarea {
+            width: 100%;
+            border: 1px solid #999;
+            padding: 6px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10pt;
+            background: transparent;
+            text-align: left;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            vertical-align: top;
+        }
+
+        textarea.large {
+            min-height: 260px;
+        }
+
+        textarea.xlarge {
+            min-height: 625px;
+        }
+
+        textarea.risk-summary {
+            min-height: 400px;
+        }
+
+        textarea.section6-fill {
+            min-height: calc(100vh - 250px);
+        }
+
+        @media print {
+            textarea.section6-fill {
+                min-height: 7.5in;
+            }
+        }
+
+        /* FRAQ RATINGS TABLE */
+        .fraq-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        .fraq-table td {
+            border: 2px solid #000;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .fraq-table .label-cell {
+            background: #d3d3d3;
+            width: 33%;
+        }
+
+        /* CHECKBOX STYLES */
+        .checkbox-group {
+            display: flex;
+            gap: 30px;
+            margin: 10px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #000;
+        }
+
+        /* QUESTIONNAIRE STYLES */
+        .questionnaire-section {
+            margin-top: 5px;
+        }
+
+
+        .question {
+            border: 1px solid #333;
+            padding: 5px;
+            margin: 8px 0;
+            background: transparent;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .textarea-border {
+            border: 1px solid #333;
+            padding: 8px;
+            margin: 4px 0 8px 0;
+            box-sizing: border-box;
+        }
+        .textarea-border textarea {
+            border: none !important;
+            outline: none !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+        }
+
+        .question-header {
+            font-weight: bold;
+            font-size: 11pt;
+            margin-bottom: 8px;
+            color: #1e3c72;
+        }
+
+        .option {
+            margin: 4px 0;
+            padding: 4px;
+            border-left: 3px solid transparent;
+        }
+
+        .option:hover {
+            background: #f0f0f0;
+        }
+
+        .option.selected {
+            background: #e3f2fd;
+            border-left-color: #1e3c72;
+        }
+
+        .option input[type="radio"],
+        .option input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .option-text {
+            font-size: 10pt;
+        }
+
+        .option-score {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 2px 8px;
+            background: #e8e8e8;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .plot-image-container {
+            position: relative;
+            display: block;
+            margin: 15px 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .plot-image-wrapper {
+            position: relative;
+            display: block;
+        }
+
+        .plot-image-container img {
+            max-width: 100%;
+            max-height: 700px;
+            width: auto;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        .plot-image-comment {
+            width: 100%;
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            resize: vertical;
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+
+        .plot-image-comment:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 3px rgba(0,123,255,0.3);
+        }
+
+        .plot-image-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .plot-image-remove {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .plot-image-remove:hover {
+            background: #b71c1c;
+        }
+
+        @media print {
+            .plot-image-container {
+                page-break-inside: avoid;
+                background: white;
+                border: 1px solid #ccc;
+            }
+            .plot-image-container img {
+                max-width: 5.5in;
+                max-height: 7in;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+                page-break-inside: avoid;
+            }
+            .plot-image-remove {
+                display: none;
+            }
+            .plot-image-comment {
+                border: 1px solid #ccc;
+                background: white;
+            }
+        }
+
+        .instruction-banner {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        /* RISK ASSESSMENT STYLES */
+        .risk-section {
+            border: 2px solid #1e3c72;
+            padding: 10px;
+            margin: 10px 0;
+            background: transparent;
+            page-break-inside: avoid;
+        }
+
+        .risk-section.inactive {
+            background: #f0f0f0;
+            opacity: 0.6;
+        }
+
+        .risk-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1e3c72;
+            margin-bottom: 15px;
+        }
+
+        .risk-calc-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            font-size: 10pt;
+        }
+
+        .risk-result {
+            font-size: 14pt;
+            font-weight: bold;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+            border: 2px solid #000;
+        }
+
+        .risk-level-VERY-LOW { background: #d4edda; color: #155724; }
+        .risk-level-LOW { background: #d1ecf1; color: #0c5460; }
+        .risk-level-MEDIUM { background: #fff3cd; color: #856404; }
+        .risk-level-HIGH { background: #f8d7da; color: #721c24; }
+        .risk-level-VERY-HIGH { background: #f5c6cb; color: #721c24; }
+
+        /* BUTTON STYLES */
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 11pt;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #2d5ba5;
+        }
+
+        /* MODAL STYLES */
+        .classification-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .classification-modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 550px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 10px;
+            color: #1e3c72;
+        }
+
+        .modal-content label {
+            display: block;
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+        }
+
+        .modal-content input[type="text"],
+        .modal-content input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .modal-content .radio-group {
+            margin: 10px 0;
+        }
+
+        .modal-content .radio-option {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .modal-content .radio-option:hover {
+            background: #f0f0f0;
+        }
+
+        .modal-content .conditional-fields {
+            margin-top: 10px;
+            padding: 10px;
+            border: 2px solid #1e3c72;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+
+        .modal-content .conditional-fields.hidden {
+            display: none;
+        }
+
+        .modal-content input[type="text"].modal-input {
+            width: 100%;
+            padding: 8px;
+            font-size: 11pt;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* CALCULATION GUIDE */
+        .calc-guide {
+            border: none;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            page-break-inside: avoid;
+        }
+
+        .calc-guide h3 {
+            color: #000;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .calc-guide pre {
+            background: transparent;
+            padding: 0;
+            border-left: none;
+            overflow-x: auto;
+            font-size: 10pt;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            margin: 5px 0;
+        }
+
+        .calc-guide p {
+            margin: 5px 0;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            /* Chrome-specific fixes */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                counter-reset: page-number;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Hide classification banners in print - we'll add them to each page */
+            .classification-banner,
+            .classification-footer {
+                display: none !important;
+            }
+
+            /* Hide buttons in print */
+            .button-container,
+            .reset-form-button {
+                display: none !important;
+            }
+
+            /* Hide HTML page numbers */
+            .page-number {
+                display: none !important;
+            }
+
+            /* Page margins - top/bottom for classification banner space on ALL pages
+               including continuation pages when content overflows a single div */
+            @page {
+                size: letter;
+                margin: 0.5in 0.75in;
+            }
+
+            .page {
+                page-break-after: always !important;
+                break-after: always !important;
+                padding-top: 0.50in !important;
+                padding-bottom: 0.40in !important;
+                padding-left: 0.25in !important;
+                padding-right: 0.25in !important;
+                margin: 0 !important;
+                position: relative;
+                box-sizing: border-box;
+            }
+
+            /* Remove page break from last page to avoid blank pages */
+            .page:last-of-type,
+            .page:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                min-height: auto;
+            }
+
+            /* Remove min-height in print to prevent blank pages */
+            .page {
+                min-height: auto !important;
+                height: auto !important;
+            }
+
+            /* Disable pseudo-element banners in print — real DOM banners are
+               injected by saveAsPDF() for cross-browser compatibility (Safari
+               does not repeat position:fixed pseudo-elements on every page) */
+            .page::after,
+            .page::before {
+                display: none !important;
+                content: none !important;
+                height: 0 !important;
+                width: 0 !important;
+                overflow: hidden !important;
+                page-break-before: avoid !important;
+                page-break-after: avoid !important;
+            }
+
+            /* Injected print banner elements — positioned fixed so they appear
+               at consistent page-edge positions regardless of div content height */
+            .print-banner-header,
+            .print-banner-footer {
+                display: block !important;
+                width: 100%;
+                text-align: center;
+                font-weight: bold;
+                font-size: 11pt;
+                font-family: 'Times New Roman', Times, serif;
+                line-height: 1.1;
+                color: black;
+                background: transparent;
+                padding: 0;
+                margin: 0;
+                position: fixed;
+                left: 0;
+                right: 0;
+                z-index: 9999;
+            }
+            .print-banner-header {
+                top: 0.05in;
+            }
+            .print-banner-footer {
+                bottom: 0.05in;
+            }
+
+            /* Safari-specific: static in-flow banners at top/bottom of each page div */
+            .print-banner-safari-header,
+            .print-banner-safari-footer {
+                display: block !important;
+                width: 100%;
+                text-align: center;
+                font-weight: bold;
+                font-size: 11pt;
+                font-family: 'Times New Roman', Times, serif;
+                line-height: 1.1;
+                color: black;
+                background: transparent;
+                padding: 0;
+            }
+            .print-banner-safari-header {
+                margin: -0.45in 0 0.1in 0;
+            }
+            .print-banner-safari-footer {
+                margin: 0.1in 0 -0.30in 0;
+            }
+
+            .question,
+            .risk-section,
+            .calc-guide,
+            .section-row,
+            .section-row-large,
+            .section-row-xlarge {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            /* Chrome: Prevent extra spacing */
+            .question,
+            .section-row,
+            .section-row-large,
+            .section-row-xlarge {
+                margin-top: 8px !important;
+                margin-bottom: 8px !important;
+            }
+
+            /* Chrome: Fix pre/textarea spacing */
+            pre, textarea {
+                margin: 0 !important;
+                padding: 5px !important;
+            }
+
+            /* Prevent images from splitting across pages */
+            img,
+            #plotPlanImages img,
+            #plotPlanImages > div {
+                page-break-inside: avoid !important;
+                page-break-before: auto;
+                page-break-after: auto;
+                display: block;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0;
+                margin: 0;
+                page-break-after: avoid;
+            }
+
+            .cover-page {
+                padding: 10px;
+                min-height: 7.5in;
+            }
+
+            textarea,
+            input[type="text"] {
+                border: none;
+                border-bottom: 1px solid #000;
+                background: transparent;
+                overflow: visible !important;
+                height: auto !important;
+                text-align: left !important;
+                vertical-align: top !important;
+            }
+
+            textarea {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                display: block !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+                line-height: 1.2 !important;
+            }
+
+            /* Fix classification box position in print to prevent overlap with date */
+            .classification-details-box {
+                position: relative !important;
+                bottom: auto !important;
+                right: auto !important;
+                margin-top: 40px;
+                margin-left: auto;
+                float: right;
+                clear: both;
+            }
+
+            /* Force page breaks before renovation projects and plot plan sections */
+            .renovation-projects-page {
+                page-break-before: always !important;
+                break-before: page !important;
+            }
+
+            /* Force Plot Plan to always start on new page */
+            .plot-plan-page {
+                display: block !important;
+                position: relative !important;
+                page-break-before: always !important;
+                break-before: page !important;
+            }
+
+            /* Overflow pages created by saveAsPDF for multi-image plot plans */
+            .plot-plan-overflow {
+                display: block !important;
+                position: relative !important;
+                page-break-before: always !important;
+                break-before: page !important;
+                page-break-after: always !important;
+                break-after: always !important;
+                padding-top: 0.50in !important;
+                padding-bottom: 0.40in !important;
+                padding-left: 0.25in !important;
+                padding-right: 0.25in !important;
+            }
+        }
+
+        /* Hide print banners on screen — they are injected/removed by saveAsPDF() */
+        .print-banner-header,
+        .print-banner-footer,
+        .print-banner-safari-header,
+        .print-banner-safari-footer {
+            display: none;
+        }
+
+        /* Ensure content below fixed headers */
+        @media screen {
+            .container {
+                margin-top: 60px;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="classification-banner" id="topBanner">CUI</div>
+
+    <!-- CLASSIFICATION MODAL -->
+    <div class="classification-modal" id="classificationModal">
+        <div class="modal-content">
+            <h2>Classification Markings</h2>
+            <p style="margin-bottom: 20px; font-size: 10pt;">Select the classification type for this document:</p>
+
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" name="classificationType" id="cuiType" value="CUI" onchange="toggleClassificationFields()">
+                    <label for="cuiType" style="display: inline; font-weight: normal;">Controlled Unclassified Information</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" name="classificationType" id="classifiedType" value="Classified" onchange="toggleClassificationFields()">
+                    <label for="classifiedType" style="display: inline; font-weight: normal;">Classified</label>
+                </div>
+            </div>
+
+            <!-- CUI Fields -->
+            <div class="conditional-fields hidden" id="cuiFields">
+                <h3 style="margin-bottom: 15px; font-size: 12pt;">UNCLASSIFIED</h3>
+
+                <label for="cuiControlledBy">Controlled by:</label>
+                <input type="text" id="cuiControlledBy" class="modal-input" placeholder="e.g., Office symbol" maxlength="100">
+
+                <label for="cuiControlledBy2">Controlled by:</label>
+                <input type="text" id="cuiControlledBy2" class="modal-input" placeholder="e.g., Office symbol" maxlength="100">
+
+                <label for="cuiCategory">Category:</label>
+                <input type="text" id="cuiCategory" class="modal-input" placeholder="e.g., CTI, DCRIT, PHYS, etc." maxlength="50">
+
+                <label for="cuiDissemControl">Limited Dissemination Control:</label>
+                <input type="text" id="cuiDissemControl" class="modal-input" placeholder="e.g., REL TO, NOCON, RELIDO" maxlength="100">
+
+                <label for="cuiPOC">Point of Contact:</label>
+                <input type="text" id="cuiPOC" class="modal-input" placeholder="Name, email, phone #" maxlength="200">
+            </div>
+
+            <!-- Classified Fields -->
+            <div class="conditional-fields hidden" id="classifiedFields">
+                <h3 style="margin-bottom: 15px; font-size: 12pt;">CLASSIFICATION</h3>
+
+                <label for="classificationLevel">Classification Level:</label>
+                <input type="text" id="classificationLevel" class="modal-input" placeholder="e.g., SECRET, TOP SECRET" maxlength="20">
+
+                <label for="classifiedBy">Classified By:</label>
+                <input type="text" id="classifiedBy" class="modal-input" placeholder="" maxlength="100">
+
+                <label for="derivedFrom">Derived From:</label>
+                <input type="text" id="derivedFrom" class="modal-input" placeholder="" maxlength="200">
+
+                <label for="declassifyOn">Declassify On:</label>
+                <input type="text" id="declassifyOn" class="modal-input" placeholder="" maxlength="50">
+            </div>
+
+            <div class="button-container">
+                <button onclick="applyClassification()">Apply Classification</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- PAGE 1: COVER PAGE -->
+        <div class="page cover-page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="cover-title">
+                <div class="cover-header">ICD-705 FACILITY RISK ASSESSMENT</div>
+
+                <div class="cover-prepared">
+                    <div><strong>PREPARED FOR:</strong></div>
+                    <input type="text" id="organizationName" placeholder="Name of Organization" style="margin: 5px 0;" maxlength="200">
+                    <input type="text" id="preparedFor" placeholder="Name of ICD 705 Project or SCIF ID" style="margin: 5px 0;" maxlength="200">
+                </div>
+
+                <div class="cover-prepared" style="margin-top: 50px;">
+                    <div><strong>PREPARED BY:</strong></div>
+                    <input type="text" id="preparedBy" placeholder="Full Name / Title / Position / Organization" style="margin: 10px 0;" maxlength="200">
+                </div>
+
+                <div class="cover-date" style="margin-top: 50px;">
+                    <div><strong>DATE:</strong> <input type="text" id="coverDate" placeholder="MM/DD/YYYY" style="width: 150px; display: inline-block;" maxlength="10"></div>
+                </div>
+            
+
+                <div class="classification-details-box" id="classificationDetailsBox">
+                    <div id="classificationBoxContent">
+                        <div class="detail-line"><span id="detailClassification">UNCLASSIFIED</span></div>
+                    </div>
+                </div>
+
+                <div class="button-group-bottom-left">
+                    <button class="reset-form-button" onclick="generateCompleteMergedPDF()">Generate PDF to submit</button>
+                    <button class="reset-form-button" onclick="saveAsPDF()">Print Document</button>
+                    <button class="reset-form-button" onclick="saveFile()">Save File</button>
+                    <button class="reset-form-button" onclick="resetForm()">Reset Form</button>
+                    <button class="reset-form-button" onclick="showClassificationModal()">Set Classification Markings</button>
+                </div>
+             </div>
+        </div>
+
+        <!-- PAGE 2: PURPOSE, SCOPE -->
+        <div class="page purpose-scope-page" data-classification-header="CUI" data-classification-footer="CUI">
+            <h2 style="text-align: center; font-size: 14pt; margin-bottom: 10px;">ICD-705 Facility Risk Assessment for</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Name of ICD 705 Project or SCIF ID</p>
+
+            <div style="margin: 20px 0;">
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 10px;">Purpose:</p>
+                <p style="text-align: justify; font-size: 10pt; line-height: 1.4;">
+                    The purpose of this risk assessment is to establish standardized procedures for completing an ICD-705 preconstruction risk assessment as part of the concept approval process. The risk assessment results are intended to be utilized when identifying the most appropriate methods to safeguard national security information and comply with ICD-705 requirements for risk management and SCIF accreditation. The results of the risk assessment drive security design & accreditation decisions, from site selection to facility hardening and technical countermeasures, and serves as the foundation for the project's accreditation process. This risk assessment provides the Security Official (SO) and Site Security Manager (SSM) with a preconstruction tool for identifying risks associated with the specific project and characteristics unique to the facility end user/organization. The primary individual purposes of this risk assessment are to:
+                </p>
+                <ol style="margin-left: 40px; margin-top: 10px; font-size: 10pt;">
+                    <li>Identify and Prioritize Assets Requiring Protection</li>
+                    <li>Identify Threats and Adversaries</li>
+                    <li>Identify Vulnerabilities in the Proposed Site & Design</li>
+                    <li>Evaluate Consequences & Impacts</li>
+                    <li>Establish Security Requirements & Design Criteria to Respond to Risks</li>
+                    <li>Support Cost-Benefit and Resource Allocation Decisions</li>
+                    <li>Provide Formal Documentation of Risk Assessments to Assist Future Inspections</li>
+                </ol>
+                <p style="text-align: justify; font-size: 10pt; margin-top: 10px;">
+                    The results of this risk assessment will allow the Accrediting Official (AO) and/or Certified TEMPEST Technical Authority (CTTA) to identify countermeasures and acceptable mitigations based on the information provided.
+                </p>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 10px;">Scope:</p>
+                <p style="text-align: justify; font-size: 10pt; line-height: 1.4;">
+                    The ICD-705 Facility Risk Assessment is an essential process for identifying, evaluating, and mitigating risks associated with protecting U.S. national security. An accurate risk assessment is a mission-critical requirement that ensures national security, compliance, and operational continuity for a SCIF. It is a critical element for accurate SCIF Planning, Design, Construction, and Accreditation. This ICD-705 Facility Risk Assessment may be used by any SCIF project in support of any AO within any Intelligence Community (IC) Element, unless otherwise directed by the AO. The AO may also require additional risk assessments and/or information related to Analytical Risk Management Framework as outlined in references I-IV.
+                </p>
+                <p style="text-align: justify; font-size: 10pt; margin-top: 10px;">
+                    This ICD-705 Facility Risk Assessment should be submitted along with the Concept Approval Request (CAR) to the AO as part of the SCIF sponsorship process. Failure to submit the risk assessment with the CAR and SCIF sponsorship package may result in inadequate requirements being identified, facility design deficiencies, and/or overall adverse impacts to facility accreditation and the protection of US national security.
+                </p>
+            </div>
+        </div>
+
+        <!-- PAGE 3: GENERAL -->
+        <div class="page general-page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div style="margin: 10px 0;">
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 10px;">General:</p>
+                <p style="text-align: justify; font-size: 10pt; line-height: 1.4;">
+                    Completing this risk assessment is intended to ensure compliance with all listed references within this risk assessment. Analytical Risk Management is a critical aspect to determine the most efficient countermeasures required for physical and technical security when planning, designing, construction, and accrediting a SCIF. The AO, CTTA, and/or facility end user may require additional tasks when completing the risk assessment. Additional references and requirements may also apply based upon the project specific AO, CTTA, IC Element, Special Access Program (SAP) Central Office (SAPCO), and end user/organization.
+                </p>
+            </div>
+
+            <p style="text-align: justify; font-size: 10pt; margin-bottom: 15px;">
+                The person(s) completing this risk assessment should consider the following throughout the risk assessment process:
+            </p>
+            <ol style="margin-left: 30px; font-size: 10pt; line-height: 1.5;">
+                <li style="margin-bottom: 10px;">Before completing this risk assessment, complete the ICD-705 Facility Risk Assessment Questionnaire (FRAQ), enclosure 1. The questions on the FRAQ and the identified risk ratings produced by the FRAQ are intended to support the explanations within this risk assessment and identified/required countermeasures.
+                    <ol type="a" style="margin-left: 20px; margin-top: 8px;">
+                        <li style="margin-bottom: 8px;">Since the risk assessment itself is a subjective evaluation, care should be taken to ensure all stakeholders are consulted to develop a tenable description of the threat situation and the resultant risk categorization. Consult the SCIF SO, AO, CTTA, Cognizant Security Authority (CSA), counterintelligence (CI) office, and/or organization executive, when questions exist but cannot be answered by the person(s) completing this risk assessment.</li>
+                        <li style="margin-bottom: 8px;">Once approved by the AO, the completed risk assessment must be maintained by the SCIF SO and SSM, or designated information security specialist, throughout construction and included in the final accreditation package. The risk assessment must be available for review upon request by the AO during a SCIF inspection.</li>
+                        <li>The risk assessment should be routinely updated throughout the lifecycle of a SCIF, both throughout construction and after accreditation. Identified increases to risk may require additional countermeasures to be implemented at any point throughout the SCIF lifecycle.</li>
+                    </ol>
+                </li>
+            </ol>
+
+            <div style="margin-top: 10px;">
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 10px;">References:</p>
+                <ol style="margin-left: 30px; font-size: 10pt; line-height: 1.5;">
+                    <li>ICD 705, Sensitive Compartmented Information Facilities, dated 26 May 2010 (U)</li>
+                    <li>ICS 705-01, Physical and Technical Security Standards for Sensitive Compartmented Information Facilities, dated: 14 December 2023 (U)</li>
+                    <li>ICS 705-02, Standards for the Accreditation and Reciprocal Use of</li>
+                    <li>Sensitive Compartmented Information Facilities, dated: 28 March 2022 (U)<br>
+                    IC Tech Spec-for ICD/ICS 705, Version 1.5.1, Technical Specifications for Construction and Management of Sensitive Compartmented Information Facilities, dated 26 July 2021(U)</li>
+                </ol>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 10px;">Enclosure(s):</p>
+                <p style="margin-left: 20px; font-size: 10pt;">1. ICD-705 Facility Risk Assessment Questionnaire (FRAQ)</p>
+            </div>
+        </div>
+
+        <!-- PAGE 5: SECTION 1 - GENERAL INFORMATION -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">SECTION 1 – GENERAL INFORMATION</div>
+
+            <div class="section-row">
+                <div class="section-label">a. SCIF ID <em>(If applicable)</em></div>
+                <input type="text" id="scifId" placeholder="">
+            </div>
+
+            <table class="info-table">
+                <tr>
+                    <td class="label">b. DATE OF PRECONSTRUCTION<br>APPROVAL <em>(If applicable)</em></td>
+                    <td class="label">c. DATE OF FIXED FACILITY<br>CHECKLIST APPROVAL<br><em>(If applicable)</em></td>
+                    <td class="label">d. DATE OF TEMPEST<br>COUNTERMEASURE<br>REVIEW APPROVAL<br><em>(If applicable)</em></td>
+                </tr>
+                <tr>
+                    <td><input type="text" id="datePrecon" placeholder=""></td>
+                    <td><input type="text" id="dateFixed" placeholder=""></td>
+                    <td><input type="text" id="dateTempest" placeholder=""></td>
+                </tr>
+            </table>
+
+            <div class="section-row">
+                <div class="section-label">e. INDIVIDUAL(S) CONDUCTING RISK ASSESSMENT</div>
+                <table class="info-table" style="margin-top: 10px;">
+                    <tr>
+                        <td class="label">1. NAME <em>(Last, First, Middle Initial)</em></td>
+                        <td class="label">2. RANK/GRADE</td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" id="conductorName" placeholder=""></td>
+                        <td><input type="text" id="conductorRank" placeholder=""></td>
+                    </tr>
+                </table>
+                <table class="info-table" style="margin-top: 5px;">
+                    <tr>
+                        <td class="label">3. ORGANIZATION</td>
+                        <td class="label">4. TELEPHONE NUMBER</td>
+                        <td class="label">5. OFFICIAL EMAIL</td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" id="conductorOrg" placeholder=""></td>
+                        <td><input type="text" id="conductorPhone" placeholder=""></td>
+                        <td><input type="text" id="conductorEmail" placeholder=""></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section-row">
+                <div class="section-label">f. LOCATION OF BUILDING/FACILITY <em>(Bldg Number, Installation/Site, and Physical Address)</em></div>
+                <textarea id="facilityLocation" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 6: SECTION 1g -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-row-large">
+                <div class="section-label">g. EXECUTIVE SUMMARY AND DESCRIPTION OF FACILITY:</div>
+                <div class="section-instruction">
+                    Provide a summary and description of the facility once completed. Include building type, purpose of use and/or types of use, specialty uses (e.g., laboratory), type of SCIF (e.g., Open storage, closed storage, etc.), describe any SAPs/Compartmented Area (CA), approximate square footage of the entire building and SCIF space (if different), number of stories, number of exterior access points/doors, and number of exterior windows. Use section 6 to provide additional information as necessary.
+                </div>
+                <textarea id="executiveSummary" class="xlarge" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 7: SECTION 1h - RENOVATION PROJECTS -->
+        <div class="page renovation-projects-page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-row-xlarge">
+                <div class="section-label">h. RENOVATION PROJECTS:</div>
+                <div class="section-instruction">
+                    If this project is a renovation project, describe the usage of the space for the last 10 years. Was it SCIF, SAPF, collateral, unclassified w/ access control, unclassified w/out access control, or something else? What organizations, companies, or other groups have occupied the space to be renovated over the last 10 years? This information will play a major role in the overall risk assessment, and all details are relevant for AO consideration. If any details are unknown, explain why they are unknown and what details cannot be obtained. Unknown details may result in an increased risk determination by the AO and/or CTTA and renovation/construction requirements may be increased as a result. Be as descriptive as possible. Use section 6 to provide additional information as necessary.
+                </div>
+                <textarea id="renovationProjects" class="xlarge" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 8: SECTION 1i - PLOT PLAN -->
+        <div class="page plot-plan-page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-row-xlarge">
+                <div class="section-label">i. PLOT PLAN OF THE ENTIRE BUILDING/FACILITY AND ADJACENCIES:</div>
+                <div class="section-instruction">
+                    Attach overhead imagery/map/blueprint of the building and identified adjacencies, to include:<br>
+                    -Compass rose showing true north<br>
+                    -Perimeter barrier with fences/gates/access control (if applicable)<br>
+                    -Parking Areas/Structures<br>
+                    -Drawings/blueprints for any planned construction/remodeling/renovation projects (if applicable)
+                </div>
+                <div style="margin: 10px 0;">
+                    <input type="file" id="plotPlanUpload" accept="image/*" multiple style="margin-bottom: 10px;">
+                    <button onclick="document.getElementById('plotPlanUpload').click()" style="padding: 6px 12px; cursor: pointer; background: #1e3c72; color: white; border: none; border-radius: 3px;">Upload Image(s)</button>
+                    <span style="margin-left: 10px; font-size: 9pt; color: #666;">or paste image with Ctrl+V</span>
+                </div>
+                <div id="plotPlanImages" style="margin: 10px 0;"></div>
+                <textarea id="plotPlan" class="" placeholder="[Add notes or description here]"></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 9: SECTION 2 - ASSETS -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">SECTION 2 – ASSETS</div>
+
+            <div class="section-row-xlarge">
+                <div class="section-instruction">
+                    Describe the assets specific to this facility. Assets are defined as anything of value to the facility end user and/or organization that needs protection because its loss, damage, or compromise would have a negative impact on operations, national security, safety, and/or ICD–705 compliance. Include a description of assets during construction/renovation (e.g., the secure construction site, materials, information such as blueprints, etc.) and assets after the facility is completed (e.g., information, equipment, operations, people, etc.). Be as descriptive as possible. Use section 6 to provide additional information as necessary.
+                </div>
+                <textarea id="assets" class="xlarge" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 10: SECTION 3 - THREATS -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">SECTION 3 – THREATS</div>
+
+            <div class="section-row-xlarge">
+                <div class="section-instruction">
+                    Describe the threats specific to this facility and its assets. Threats are defined as any potential individual, organization, action, or condition (whether intentional or unintentional) that could cause harm to an asset by exploiting a vulnerability. Include a description of all known threats and threat types, with specific focus on threats posed by Foreign Intelligence Services (FIS) related to technical collection/espionage and/or Human Intelligence (HUMINT) activities. Utilize as many resources as possible, including local threat assessments performed by counterintelligence (CI) personnel and local law enforcement. Be as descriptive as possible. Use section 6 to provide additional information as necessary.
+                </div>
+                <textarea id="threats" class="xlarge" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 11: SECTION 4 - VULNERABILITIES -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">SECTION 4 – VULNERABILITIES</div>
+
+            <div class="section-row-xlarge">
+                <div class="section-instruction">
+                    Describe the vulnerabilities specific to this facility, its assets, and identified threats. Vulnerabilities are defined as a weakness, flaw, or gap in a security system, process, or control that can be exploited by a threat to harm an asset. Include a description of all known vulnerabilities in the current project/facility conditions. Completing this section requires a facility/project site physical visit and inspection of current conditions. Be as descriptive as possible. Use section 6 to provide additional information as necessary.
+                </div>
+                <textarea id="vulnerabilities" class="xlarge" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 12: SECTION 5 - RISK ASSESSMENT SUMMARY -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">SECTION 5 – RISK ASSESSMENT SUMMARY</div>
+
+            <table class="fraq-table">
+                <tr>
+                    <td class="label-cell">FRAQ Ratings</td>
+                    <td class="label-cell">Physical Risk<br>Level</td>
+                    <td class="label-cell">Technical Risk<br>Level</td>
+                </tr>
+                <tr>
+                    <td style="background: #f0f0f0; font-size: 9pt; font-style: italic; color: #666;">*Note: Risk levels auto populate</td>
+                    <td id="physicalRiskSummary">Pending questionnaire completion</td>
+                    <td id="technicalRiskSummary">Pending questionnaire completion</td>
+                </tr>
+            </table>
+
+            <div class="section-row-xlarge">
+                <div class="section-instruction">
+                    Describe the risks specific to this facility, its assets, identified threats, and known vulnerabilities. Risks are defined as the potential for a threat to exploit a vulnerability and cause harm to an asset, measured by the likelihood of occurrence and the impact of the consequences. Describe the likelihood and impact (e.g., Low/Medium/High or numeric scores) for each risk requiring action. Link each major risk to a recommended mitigation (e.g., physical, technical, procedural). Describe any risks that remain after mitigation and whether they are acceptable under policy and/or AO expectations. Provide enough context for the AO, CTTA, and senior leadership to make funding, design, and mitigation decisions. Be as descriptive as possible. Use section 6 to provide additional information as necessary.
+                </div>
+                <textarea id="riskSummary" class="risk-summary" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 13: SECTION 6 - ADDITIONAL INFORMATION -->
+        <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">SECTION 6 - ADDITIONAL INFORMATION</div>
+
+            <div class="section-row-xlarge">
+                <div class="section-instruction">
+                    Provide additional comments and explanations as required for the AO to have the fullest understanding of the risks associated with this facility/project. Be as descriptive as possible. Use additional pages as necessary.
+                </div>
+                <textarea id="additionalInfo" class="section6-fill" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 14: GUIDE FOR COMPLETING -->
+        <div class="page guide-page" data-classification-header="CUI" data-classification-footer="CUI">
+            <h3 style="text-align: center; margin-bottom: 15px; font-size: 14pt;">Guide for Completing the ICD-705 Facility Risk Assessment:</h3>
+
+            <div style="font-size: 10pt; line-height: 1.5;">
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">1. SECTION 1 – GENERAL INFORMATION:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">For sections a-d, provide applicable information. Section e: primary person completing assessment. Section f: facility location. Section g: full description. Section h: renovation history. Section i: overhead images and diagrams.</p>
+
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">2. SECTION 2 – ASSETS:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">Identify and classify all assets requiring protection: tangible (equipment, materials, people) and intangible (data, information). Be comprehensive.</p>
+
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">3. SECTION 3 – THREATS:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">Describe threats using authoritative assessments (SETL for OCONUS, NSA IA or CI assessments for CONUS). Consider human, technical, environmental, and natural threats.</p>
+
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">4. SECTION 4 – VULNERABILITIES:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">Analyze vulnerabilities after identifying assets and threats. Conduct physical site visits. Consider physical, procedural, technical, and operational vulnerabilities.</p>
+
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">5. SECTION 5 – RISK ASSESSMENT SUMMARY:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">Transfer calculated risk ratings from the FRAQ. Provide detailed analysis explaining which factors contributed most to risk. Recommend specific countermeasures and describe residual risks.</p>
+
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">6. SECTION 6 – ADDITIONAL INFORMATION:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">Include all additional information ensuring the AO has full understanding of risks. Use for overflow or information not covered elsewhere.</p>
+
+                <p style="font-weight: bold; margin-top: 4px; margin-bottom: 2px;">ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT:</p>
+                <p style="margin-left: 10px; margin-bottom: 3px;">The AO responds with: Approved w/out comments, Approved w/comments, or Disapproved/Sent Back.</p>
+            </div>
+        </div>
+
+        <!-- ENCLOSURE 1: FRAQ QUESTIONNAIRE -->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">ENCLOSURE 1: ICD-705 FACILITY RISK ASSESSMENT QUESTIONNAIRE (FRAQ)</div>
+
+            <div style="margin-bottom: 10px; font-size: 10pt;">
+                Complete all questions below. Your responses will automatically calculate Physical Risk and Technical Risk ratings. These ratings will be transferred to Section 5.
+            </div>
+
+            <!-- RISK ASSESSMENT RESULTS -->
+            <div class="risk-section inactive" id="physicalRiskSection">
+                <div class="risk-title">Physical Risk Assessment</div>
+                <div class="risk-calc-row">
+                    <span>Threat Level (Q2):</span>
+                    <span id="physThreat">--</span>
+                </div>
+                <div class="risk-calc-row">
+                    <span>Distance Vulnerability (Avg (geometric mean) of Q4 & Q6):</span>
+                    <span id="physDistVuln">--</span>
+                </div>
+                <div class="risk-calc-row">
+                    <span>Vulnerability Factors (Avg of Q1,Q2,Q3,Q3.1,Q5,Q5.1,Q8,Q9,Q11,Q12):</span>
+                    <span id="physVulnFactors">--</span>
+                </div>
+                <div class="risk-calc-row">
+                    <span>Adjusted Vulnerability:</span>
+                    <span id="physAdjVuln">--</span>
+                </div>
+                <div class="risk-result" id="physicalRiskResult">
+                    Physical Risk: <span id="physRisk">--</span> (<span id="physRiskLevel">Not Calculated</span>)
+                </div>
+            </div>
+
+            <div class="risk-section inactive" id="technicalRiskSection">
+                <div class="risk-title">Technical Risk Assessment</div>
+                <div class="risk-calc-row">
+                    <span>Threat Level (Q2):</span>
+                    <span id="techThreat">--</span>
+                </div>
+                <div class="risk-calc-row">
+                    <span>Distance Vulnerability (Avg (geometric mean) of Q4 & Q6):</span>
+                    <span id="techDistVuln">--</span>
+                </div>
+                <div class="risk-calc-row">
+                    <span>Vulnerability Factors (Avg of Q1,Q2,Q3,Q3.1,Q5,Q5.1,Q7,Q7.1,Q8,Q9,Q10,Q11,Q13):</span>
+                    <span id="techVulnFactors">--</span>
+                </div>
+                <div class="risk-calc-row">
+                    <span>Adjusted Vulnerability:</span>
+                    <span id="techAdjVuln">--</span>
+                </div>
+                <div class="risk-result" id="technicalRiskResult">
+                    Technical Risk: <span id="techRisk">--</span> (<span id="techRiskLevel">Not Calculated</span>)
+                </div>
+            </div>
+        </div>
+
+        <!-- QUESTIONNAIRE PAGE 2: Q1-Q2-->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="question">
+                <div class="question-header">Question 1. What selection below best describes the lease?</div>
+                <div class="option">
+                    <input type="radio" name="q1" value="-1.0" onchange="selectOption(this)">
+                    <span class="option-text">N/A, building owned by facility owner which is a U.S. company or the U.S. government.</span>
+                    <span class="option-score">Score: -1.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q1" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">Leased from a U.S. owned company.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q1" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">Leased from U.S. owned company and lease contains a right of first refusal for sale of the property or occupation by new tenants.</span>
+                    <span class="option-score">Score: 1.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q1" value="6.0" onchange="selectOption(this)">
+                    <span class="option-text">Leased from a foreign national owned company.</span>
+                    <span class="option-score">Score: 6.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q1" value="6.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. SSO/SSM must provide update once information is known.</span>
+                    <span class="option-score">Score: 6.0</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">Question 2. What is the threat level of the facility?</div>
+                <div class="instruction-banner">
+                    For locations outside the U.S. use the highest rating for HUMINT or Technical from the State Department Security Environment Threat List (SETL).
+For locations within the U.S. use the rating from the NSA Information Assurance Risk Assessment, or a counterintelligence (CI) threat assessment by a United States Government (USG) servicing CI component for an area within 25 miles.  If greater than 25 miles provide an explanation in the provided text box.  Avoid using threat assessments for military installations if the facility is not located on the installation.
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">Low - Inside the U.S.</span>
+                    <span class="option-score">Score: 1.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="3.0" onchange="selectOption(this)">
+                    <span class="option-text">Medium - Inside the U.S.</span>
+                    <span class="option-score">Score: 3.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">High - Inside the U.S.</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="6.0" onchange="selectOption(this)">
+                    <span class="option-text">Low - Outside the U.S.</span>
+                    <span class="option-score">Score: 6.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="7.5" onchange="selectOption(this)">
+                    <span class="option-text">Medium - Outside the U.S.</span>
+                    <span class="option-score">Score: 7.5</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="9.0" onchange="selectOption(this)">
+                    <span class="option-text">High - Outside the U.S.</span>
+                    <span class="option-score">Score: 9.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Critical - Outside the U.S.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q2" value="7.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time.  Special Security Officer (SSO) / Site Security Manager (SSM) must explain why the information is not known below.  This information is required to conduct Design Basis Threat Analysis, which is completed early in the project planning process.</span>
+                    <span class="option-score">Score: 7.0</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q2" class="" placeholder="Provide details when needed"></textarea></div>
+        </div>
+
+        <!-- QUESTIONNAIRE PAGE 3: Q3-Q3.1-->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="question">
+                <div class="question-header">Question 3. Select the facility's starting layer of Security in Depth (SID) and provide a description in the box provided below.</div>
+                <div class="option">
+                    <input type="radio" name="q3" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">N/A, no SID.</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q3" value="-1" onchange="selectOption(this)">
+                    <span class="option-text">Controlled and alarmed space surrounding or adjacent to the facility.</span>
+                    <span class="option-score">Score: -1</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q3" value="-1" onchange="selectOption(this)">
+                    <span class="option-text">Building with access control and alarm.</span>
+                    <span class="option-score">Score: -1</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q3" value="-1" onchange="selectOption(this)">
+                    <span class="option-text">Military installation/government compound with armed guard force.</span>
+                    <span class="option-score">Score: -1</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q3" value="-1" onchange="selectOption(this)">
+                    <span class="option-text">Fenced compound with access control.</span>
+                    <span class="option-score">Score: -1</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q3" class="" placeholder="Provide the required discription"></textarea></div>
+
+            <div class="question">
+                <div class="question-header">Question 3.1. Select each additional layer of SID for the facility.</div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">N/A, no additional layers of SID.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">Monitored closed circuit television (CCTV)</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">Roving guards</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">Building access control which is controlled or coordinated with facility owner</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">Building interior access control controlled or coordinated with the facility owner</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">Perimeter fence with access control</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">24-hour response force</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q3.1" value="-0.25" onchange="selectOption(this)">
+                    <span class="option-text">Other (Describe in text box below)</span>
+                    <span class="option-score">Score: -0.25</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q3.1" class="" placeholder="Provide details for Other"></textarea></div>
+        </div>
+
+        <!-- QUESTIONNAIRE PAGE 4: Q4-Q5 -->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">                
+            <div class="question">
+                <div class="question-header">Question 4. Upon completion, what is the shortest distance of enforceable controlled access? This is an area where unauthorized personnel are identified and legally removed if in the area without authorization.</div>
+                <div class="option">
+                    <input type="radio" name="q4" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">0 – 5 meters (0 - 16.4 feet), multi-tenant building. SCIF wall, floor, or ceiling shares a perimeter with outside entity.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q4" value="8.0" onchange="selectOption(this)">
+                    <span class="option-text">0 – 5 meters (0 - 16.4 feet), building solely occupied by the facility owner.</span>
+                    <span class="option-score">Score: 8.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q4" value="7.0" onchange="selectOption(this)">
+                    <span class="option-text">5 – 20 meters (16.4 - 65 feet).</span>
+                    <span class="option-score">Score: 7.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q4" value="6.0" onchange="selectOption(this)">
+                    <span class="option-text">20 – 100 meters (65 - 328 feet).</span>
+                    <span class="option-score">Score: 6.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q4" value="3.0" onchange="selectOption(this)">
+                    <span class="option-text">More than 100 meters (328 feet).  Provide distance in the text box below.</span>
+                    <span class="option-score">Score: 3.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q4" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q4" class="" placeholder="Provide distance"></textarea></div>
+
+            <div class="question">
+                <div class="question-header">Question 5. Are individuals without authorized access to the facility permitted to access to the space identified as controlled access above in question 4?</div>
+                <div class="option">
+                    <input type="radio" name="q5" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Yes. Including uncleared foreign nationals.</span>
+                    <span class="option-score">Score: 5</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q5" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">Yes. Uncleared U.S. citizens permitted.</span>
+                    <span class="option-score">Score: 2</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q5" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">No. Access is restricted to cleared U.S. citizens only.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q5" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- QUESTIONNAIRE PAGE 5: Q5.1-Q6 -->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">            
+            <div class="question">
+                <div class="question-header">Question 5.1. Select each type of non-U.S. citizen with access to the controlled access above.</div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">N/A, U.S. citizen's only.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">U.S. Government partner Foreign Nationals who maintain security clearances at the level of the facility, and have authorized access to all or portions of the facility.</span>
+                    <span class="option-score">Score: 1.0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">U.S. Government partner Foreign Nationals who maintain security clearances, and have access to the areas outside the facility.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Foreign Nationals working on behalf of the U.S. Government who are vetted but do not maintain a security clearance and have access to unclassified areas surrounding the facility.</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Foreign National access is not restricted, but authority to remove them exists and is exercised.</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="9.0" onchange="selectOption(this)">
+                    <span class="option-text">Foreign Nationals are escorted at all times by a cleared U.S. citizens.</span>
+                    <span class="option-score">Score: 9.0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="13.0" onchange="selectOption(this)">
+                    <span class="option-text">Foreign National access is not restricted or unknown.</span>
+                    <span class="option-score">Score: 13.0</span>
+                </div>
+                <div class="option">
+                    <input type="checkbox" name="q5.1" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time or other, describe below, (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">Question 6. What is the distance from the facility perimeter to the closest known foreign national (FN) occupied or owned location?  Include any spaces that are not immediately accessible by the SSO/SSM on government compounds.</div>
+                <div class="option">
+                    <input type="radio" name="q6" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">More than 200 meters (656 feet). Provide distance in the text box below.</span>
+                    <span class="option-score">Score: 1</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q6" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">100 – 200 meters (328 -  656 feet).</span>
+                    <span class="option-score">Score: 2</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q6" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">20 – 100 meters (65 - 328 feet).</span>
+                    <span class="option-score">Score: 5</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q6" value="8.0" onchange="selectOption(this)">
+                    <span class="option-text">5 – 20 meters (16.4 - 65 feet).</span>
+                    <span class="option-score">Score: 8</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q6" value="9.0" onchange="selectOption(this)">
+                    <span class="option-text">0 – 5 meter(s) (0 - 16.4 feet), outside the building.</span>
+                    <span class="option-score">Score: 9</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q6" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">0 – 5 meter(s) (0 - 16.4 feet), within the same building.</span>
+                    <span class="option-score">Score: 10</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q6" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q6" class="" placeholder="Provide distance"></textarea></div>
+        </div>
+            
+        <!-- QUESTIONNAIRE PAGE 6: Q7-Q8 -->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="question">
+                <div class="question-header">Question 7. Do locations outside the area identified in question 4 have line of site of the facility?  i.e., adjacent building, hill top, radio/cellular tower, etc.</div>
+                <div class="option">
+                    <input type="radio" name="q7" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Yes</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q7" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">No</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q7" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q7" class="" placeholder="Discribe location"></textarea></div>
+
+            <div class="question">
+                <div class="question-header">Question 7.1. Do foreign nationals have access to the location identified above in question 7?</div>
+                <div class="option">
+                    <input type="radio" name="q7.1" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">N/A</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q7.1" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">No</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q7.1" value="5.0" onchange="selectOption(this)">
+                    <span class="option-text">Yes</span>
+                    <span class="option-score">Score: 5.0</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">Question 8. Will the facility perimeter include any windows or glass doors?</div>
+                <div class="option">
+                    <input type="radio" name="q8" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">No</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q8" value="6.0" onchange="selectOption(this)">
+                    <span class="option-text">Yes. The facility includes glass that is higher than 5.49 meters (18 feet) from the ground or nearest accessible platform (stairwell, pipe, wall, etc.)  Provide details below.</span>
+                    <span class="option-score">Score: 6.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q8" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Yes. The facility includes glass on the ground floor or less than 5.49 meters (18 feet) from an accessible platform. Provide details below.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q8" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q8" class="" placeholder="Provide details"></textarea></div>
+        </div>
+
+        <!-- QUESTIONNAIRE PAGE 7: Q9-Q11 -->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="question">
+                <div class="question-header">Question 9. What is immediately above the facility ceiling?</div>
+                <div class="option">
+                    <input type="radio" name="q9" value="3.0" onchange="selectOption(this)">
+                    <span class="option-text">Facility roof with controlled access through locked ladders or doors.</span>
+                    <span class="option-score">Score: 3.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q9" value="8.0" onchange="selectOption(this)">
+                    <span class="option-text">Facility roof without controlled access.</span>
+                    <span class="option-score">Score: 8</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q9" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">Floor occupied solely by the facility owner.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q9" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Floor occupied by an outside entity.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q9" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">Question 10. What is immediately below the facility?</div>
+                <div class="option">
+                    <input type="radio" name="q10" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">Building foundation. No levels below.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q10" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">Floor occupied solely by the facility owner.</span>
+                    <span class="option-score">Score: 1.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q10" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Floor occupied by an outside entity.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q10" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">Question 11. What description below best matches the area of most concern on the facility's perimeter?  Select one option and provide a description below.</div>
+                <div class="option">
+                    <input type="radio" name="q11" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Publicly accessible space.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Space occupied by an unaffiliated organization.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="6.0" onchange="selectOption(this)">
+                    <span class="option-text">Uncontrolled outdoor area owned and occupied by the facility owner.</span>
+                    <span class="option-score">Score: 6.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="4.0" onchange="selectOption(this)">
+                    <span class="option-text">Uncontrolled office space occupied by the facility owner.</span>
+                    <span class="option-score">Score: 4.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">Access controlled office space occupied by the facility owner.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">Fenced compound with access controlled by the SSO/SSM.</span>
+                    <span class="option-score">Score: 1.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">Collateral Secret or above facility.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">SCI or SAP facility.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q11" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+            <div class="textarea-border"><textarea id="Q11" class="" placeholder="Provide discription"></textarea></div>
+        </div>
+
+        <!-- QUESTIONNAIRE PAGE 8: Q12-Q13 -->
+        <div class="questionnaire-section page" data-classification-header="CUI" data-classification-footer="CUI">
+
+            <div class="question">
+                <div class="question-header">Question 12. Is this facility new construction or a renovation?</div>
+                <div class="option">
+                    <input type="radio" name="q12" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">New building construction.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="4.0" onchange="selectOption(this)">
+                    <span class="option-text">Renovation/modification of an existing space accredited under pre-ICD 705 requirements.</span>
+                    <span class="option-score">Score: 4.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="3.0" onchange="selectOption(this)">
+                    <span class="option-text">Renovation/modification of an existing ICD 705 accredited space.</span>
+                    <span class="option-score">Score: 3.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="3.0" onchange="selectOption(this)">
+                    <span class="option-text">Renovate and convert collateral classified space to ICD 705 facility. Provide when the facility was constructed and accredited in the text box below.</span>
+                    <span class="option-score">Score: 3.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">Renovate and convert controlled unclassified space to a ICD 705 facility.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="4.0" onchange="selectOption(this)">
+                    <span class="option-text">Renovate and convert an unclassified space to a ICD 705 facility.</span>
+                    <span class="option-score">Score: 4.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="4.0" onchange="selectOption(this)">
+                    <span class="option-text">Prefabricated facility installed on site.</span>
+                    <span class="option-score">Score: 4.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="4.0" onchange="selectOption(this)">
+                    <span class="option-text">Modular facility assembled on site.</span>
+                    <span class="option-score">Score: 4.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q12" value="4.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 4.0</span>
+                </div>
+            </div>
+
+            <div class="question">
+                <div class="question-header">Question 13. How is power supplied to the facility?</div>
+                <div class="option">
+                    <input type="radio" name="q13" value="0.0" onchange="selectOption(this)">
+                    <span class="option-text">U.S. controlled and secured generator servicing only the facility.</span>
+                    <span class="option-score">Score: 0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q13" value="1.0" onchange="selectOption(this)">
+                    <span class="option-text">U.S. controlled and secured generator servicing the facility owner's controlled and uncontrolled facilities.</span>
+                    <span class="option-score">Score: 1.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q13" value="2.0" onchange="selectOption(this)">
+                    <span class="option-text">U.S. power source with a secured and inspectable transformer servicing only the facility.</span>
+                    <span class="option-score">Score: 2.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q13" value="7.0" onchange="selectOption(this)">
+                    <span class="option-text">U.S. power source with a transformer servicing multiple tenants within the same building.</span>
+                    <span class="option-score">Score: 7.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q13" value="9.0" onchange="selectOption(this)">
+                    <span class="option-text">Foreign power source with a U.S. controlled substation servicing only the secure facility.</span>
+                    <span class="option-score">Score: 9.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q13" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Foreign power source connected directly to the facility.</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+                <div class="option">
+                    <input type="radio" name="q13" value="10.0" onchange="selectOption(this)">
+                    <span class="option-text">Unknown at this time. (SSO/SSM must provide update once information is known.)</span>
+                    <span class="option-score">Score: 10.0</span>
+                </div>
+            </div>
+            <textarea id="13" class="" placeholder="Provide details"></textarea>
+        <!-- CALCULATION BUTTON -->
+            <div class="button-container" style="margin-top: 0px; margin-bottom: 0px;">
+                <button onclick="calculateRisks()">Calculate Risk Assessment</button>
+            </div>
+        </div>
+        
+        <!-- CALCULATION WORKSHEET -->
+        <div class="calc-guide page" data-classification-header="CUI" data-classification-footer="CUI">
+            <h3>Risk Calculation Worksheet</h3>
+
+            <p><strong>PHYSICAL RISK CALCULATION</strong></p>
+            <pre>
+Step 1: Threat
+  Q2 (Threat Level) = _______
+
+Step 2: Distance Vulnerability
+  Q4 (Controlled Access Distance) = _______
+  Q6 (Foreign National Distance) = _______
+
+  Base Distance Vuln = sqrt(Q4 × Q6)
+                     = sqrt(_____ × _____) = _______
+
+  Q3 (Security Layer) = _______
+  Q3.1 (Additional Layers) = _______
+  Total SID = Q3 + Q3.1 = _____ + _____ = _______
+
+  Layer Factor = IF Q4 = 3.0 or 6.0: 0.8 + (Total SID / 20) = _______
+                 ELSE: 1.0 = _______
+
+  Location Mult = IF Q2 >= 6.0: 1.05 = _______
+                  ELSE: 1.0 = _______
+
+  Distance Vuln = Base × Layer Factor × Location Mult (max 10.0)
+                = _____ × _____ × _____ = _______
+
+Step 3: Vulnerability Factors
+  Q1 = _____   Q3 = _____   Q3.1 = _____   Q5 = _____   Q5.1 = _____
+  Q8 = _____   Q9 = _____   Q11 = _____    Q12 = _____
+
+  Sum = _____ + _____ + _____ + _____ + _____ + _____ + _____ + _____ + _____ = _______
+
+  Vulnerability Factors = Sum / 9 = _____ / 9 = _______
+
+Step 4: Adjusted Vulnerability
+  Adjusted Vuln = (Vuln Factors × Distance Vuln) / 2
+                = (_____ × _____) / 2 = _______
+
+Step 5: Final Physical Risk
+  Physical Risk = Threat × Adjusted Vuln
+                = _____ × _____ = _______
+
+  Risk Level: _____ (VERY LOW / LOW / MEDIUM / HIGH / VERY HIGH)
+</pre>
+
+            <p><strong>TECHNICAL RISK CALCULATION</strong></p>
+            <pre>
+Step 1: Threat
+  Q2 (Threat Level) = _______
+
+Step 2: Distance Vulnerability
+  [Use same Distance Vuln from Physical Risk above] = _______
+
+Step 3: Vulnerability Factors
+  Q1 = _____   Q3 = _____   Q3.1 = _____   Q5 = _____   Q5.1 = _____
+  Q7 = _____   Q7.1 = _____  Q8 = _____    Q9 = _____   Q10 = _____
+  Q11 = ____   Q13 = _____
+
+  Sum = _____ + _____ + _____ + _____ + _____ + _____ + _____ + _____ +
+        _____ + _____ + _____ + _____ = _______
+
+  Vulnerability Factors = Sum / 12 = _____ / 12 = _______
+
+Step 4: Adjusted Vulnerability
+  Adjusted Vuln = (Vuln Factors × Distance Vuln) / 2
+                = (_____ × _____) / 2 = _______
+
+Step 5: Final Technical Risk
+  Technical Risk = Threat × Adjusted Vuln
+                 = _____ × _____ = _______
+
+  Risk Level: _____ (VERY LOW / LOW / MEDIUM / HIGH / VERY HIGH)
+</pre>
+
+            <p><strong>RISK LEVEL REFERENCE</strong></p>
+            <pre>0.0 - 9.9   = VERY LOW
+10.0 - 19.9 = LOW
+20.0 - 39.9 = MEDIUM
+40.0 - 59.9 = HIGH
+60.0+       = VERY HIGH</pre>
+        </div>
+
+        <!-- Last page: AO ACKNOWLEDGMENT -->
+       <div class="page" data-classification-header="CUI" data-classification-footer="CUI">
+            <div class="section-header">ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT</div>
+
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="approvedWithout">
+                    <label for="approvedWithout">Approved without comments</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="approvedWith">
+                    <label for="approvedWith">Approved with comments</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="disapproved">
+                    <label for="disapproved">Disapproved/Sent Back</label>
+                </div>
+            </div>
+
+            <div class="section-row-xlarge">
+                <div class="section-instruction">
+                    This section to be completed only by the AO. The AO may also add CTTA comments in this section.
+                </div>
+                <textarea id="aoComments" class="xlarge" placeholder=""></textarea>
+            </div>
+        </div>
+
+    </div>
+    <div class="classification-footer" id="bottomBanner">CUI</div>
+
+    <script>
+        // ========================================================================
+        // SECURITY FUNCTIONS
+        // ========================================================================
+
+        /**
+         * Escape HTML to prevent XSS attacks
+         * Converts HTML special characters to their entity equivalents
+         */
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        /**
+         * Validate and sanitize user input
+         * Returns {valid: boolean, sanitized: string, error: string}
+         */
+        function validateInput(value, fieldName, type = 'text', maxLength = 200) {
+            // Allow empty values
+            if (!value || value.trim() === '') {
+                return { valid: true, sanitized: '', error: null };
+            }
+
+            const trimmed = value.trim();
+
+            // 1. Length validation
+            if (trimmed.length > maxLength) {
+                return {
+                    valid: false,
+                    sanitized: '',
+                    error: fieldName + ' exceeds maximum length of ' + maxLength + ' characters'
+                };
+            }
+
+            // 2. XSS pattern detection
+            const xssPatterns = [
+                /<script[^>]*>.*?<\/script>/gi,
+                /javascript:/gi,
+                /on\w+\s*=/gi,
+                /<iframe/gi,
+                /<object/gi,
+                /<embed/gi,
+                /<link/gi,
+                /vbscript:/gi,
+                /data:text\/html/gi
+            ];
+
+            for (let pattern of xssPatterns) {
+                if (pattern.test(trimmed)) {
+                    return {
+                        valid: false,
+                        sanitized: '',
+                        error: fieldName + ' contains potentially malicious content'
+                    };
+                }
+            }
+
+            // 3. Type-specific validation
+            switch(type) {
+                case 'date':
+                    if (trimmed && !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+                        return {
+                            valid: false,
+                            sanitized: '',
+                            error: fieldName + ' must be in MM/DD/YYYY format'
+                        };
+                    }
+                    break;
+
+                case 'email':
+                    if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                        return {
+                            valid: false,
+                            sanitized: '',
+                            error: fieldName + ' must be a valid email address'
+                        };
+                    }
+                    break;
+
+                case 'alphanumeric':
+                    if (!/^[a-zA-Z0-9\s\-_.,()\/#:]+$/.test(trimmed)) {
+                        return {
+                            valid: false,
+                            sanitized: '',
+                            error: fieldName + ' contains invalid characters'
+                        };
+                    }
+                    break;
+            }
+
+            return { valid: true, sanitized: trimmed, error: null };
+        }
+
+        /**
+         * Validate file upload
+         * Returns {valid: boolean, error: string}
+         */
+        function validateFile(file, maxSizeMB = 5) {
+            const MAX_SIZE = maxSizeMB * 1024 * 1024;
+            const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp'];
+            const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+
+            // Check file size
+            if (file.size > MAX_SIZE) {
+                return {
+                    valid: false,
+                    error: 'File "' + file.name + '" exceeds ' + maxSizeMB + 'MB limit'
+                };
+            }
+
+            // Check MIME type
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                return {
+                    valid: false,
+                    error: 'File "' + file.name + '" has invalid type: ' + file.type + '\nAllowed: JPEG, PNG, GIF, BMP'
+                };
+            }
+
+            // Check file extension
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!ALLOWED_EXTENSIONS.includes(ext)) {
+                return {
+                    valid: false,
+                    error: 'File "' + file.name + '" has invalid extension\nAllowed: ' + ALLOWED_EXTENSIONS.join(', ')
+                };
+            }
+
+            return { valid: true, error: null };
+        }
+
+        /**
+         * Show security warning for classified data
+         */
+        function showClassificationWarning(level) {
+            if (level === 'CLASSIFIED') {
+                const confirmed = confirm(
+                    "SECURITY WARNING\n\n" +
+                    "This document will contain CLASSIFIED information.\n\n" +
+                    "Ensure you are on an appropriately classified system.\n" +
+                    "Do not email or share classified documents over unclassified networks.\n\n" +
+                    "Click OK to continue, Cancel to abort."
+                );
+                return confirmed;
+            } else if (level === 'CUI') {
+                const confirmed = confirm(
+                    "SECURITY NOTICE\n\n" +
+                    "This document will contain Controlled Unclassified Information (CUI).\n\n" +
+                    "Ensure you handle and store this document according to CUI handling requirements.\n" +
+                    "Limit distribution to authorized personnel only.\n\n" +
+                    "Click OK to continue."
+                );
+                return confirmed;
+            }
+            return true;
+        }
+
+        // ========================================================================
+        // END SECURITY FUNCTIONS
+        // ========================================================================
+
+
+        function selectOption(element) {
+            const parent = element.closest('.option');
+            const siblings = parent.parentElement.querySelectorAll('.option');
+
+            if (element.type === 'radio') {
+                siblings.forEach(sib => sib.classList.remove('selected'));
+                parent.classList.add('selected');
+            } else {
+                parent.classList.toggle('selected', element.checked);
+            }
+            // Trigger conditional logic update
+            updateConditionalQuestions();
+        }
+
+        function getQuestionScore(questionNum) {
+            const inputs = document.querySelectorAll(`input[name="q${questionNum}"]:checked`);
+
+            // Q5.1 uses highest value, not sum
+            if (questionNum === '5.1') {
+                let maxValue = 0;
+                inputs.forEach(input => {
+                    const value = parseFloat(input.value);
+                    if (value > maxValue) {
+                        maxValue = value;
+                    }
+                });
+                return maxValue;
+            }
+
+            // All other questions sum the values
+            let total = 0;
+            inputs.forEach(input => {
+                total += parseFloat(input.value);
+            });
+            return total || 0;
+        }
+
+        function getRiskLevel(score) {
+            if (score < 10) return 'VERY LOW';
+            if (score < 20) return 'LOW';
+            if (score < 40) return 'MEDIUM';
+            if (score < 60) return 'HIGH';
+            return 'VERY HIGH';
+        }
+
+        function calculatePhysicalRisk() {
+            const q2 = getQuestionScore('2');
+            const q3 = getQuestionScore('3');
+            const q3_1 = getQuestionScore('3.1');
+            const q4 = getQuestionScore('4');
+            const q6 = getQuestionScore('6');
+
+            // ENHANCED FORMULA - Geometric mean for distance vulnerability
+            const baseDistVuln = Math.sqrt(q4 * q6);
+
+            // Security layer adjustment factor
+            // Only applied when Q4 >= 20 meters (Q4 values: 3.0, 6.0)
+            // Q4 = 3.0 (>100m), 6.0 (20-100m) -> Apply layer factor
+            // Q4 = 7.0 (5-20m), 8.0 (0-5m), 10.0 (0-5m multi-tenant) -> NO layer factor
+            const totalSID = q3 + q3_1;  // Range: -5.0 (excellent) to +5.0 (none)
+            let layerFactor = 1.0;  // Default: no adjustment
+
+            if (q4 === 3.0 || q4 === 6.0) {
+                // Q4 >= 20 meters: Apply layer factor
+                layerFactor = 0.8 + (totalSID / 20);  // Range: 0.55 to 1.05
+            }
+
+            // Location threat multiplier
+            const locationMultiplier = (q2 >= 6.0) ? 1.05 : 1.0;
+
+            // Calculate final distance vulnerability (capped at 10.0)
+            const distanceVuln = Math.min(10.0, baseDistVuln * layerFactor * locationMultiplier);
+
+            const threat = q2;
+            const vulnFactors = (
+                getQuestionScore('1') +
+                q3 +
+                q3_1 +
+                getQuestionScore('5') +
+                getQuestionScore('5.1') +
+                getQuestionScore('8') +
+                getQuestionScore('9') +
+                getQuestionScore('11') +
+                getQuestionScore('12')
+            ) / 9;
+
+            // Ensure vulnerability is non-negative
+            const adjustedVuln = Math.max(0, (vulnFactors * distanceVuln) / 2);
+            const finalRisk = threat * adjustedVuln;
+            const riskLevel = getRiskLevel(finalRisk);
+
+            return {
+                threat: threat.toFixed(2),
+                distanceVuln: distanceVuln.toFixed(2),
+                baseDistVuln: baseDistVuln.toFixed(2),
+                layerFactor: layerFactor.toFixed(2),
+                locationMultiplier: locationMultiplier.toFixed(2),
+                vulnFactors: vulnFactors.toFixed(2),
+                adjustedVuln: adjustedVuln.toFixed(2),
+                finalRisk: finalRisk.toFixed(2),
+                riskLevel: riskLevel
+            };
+        }
+
+        function calculateTechnicalRisk() {
+            const q2 = getQuestionScore('2');
+            const q3 = getQuestionScore('3');
+            const q3_1 = getQuestionScore('3.1');
+            const q4 = getQuestionScore('4');
+            const q6 = getQuestionScore('6');
+
+            // ENHANCED FORMULA - Geometric mean for distance vulnerability
+            const baseDistVuln = Math.sqrt(q4 * q6);
+
+            // Security layer adjustment factor
+            // Only applied when Q4 >= 20 meters (Q4 values: 3.0, 6.0)
+            const totalSID = q3 + q3_1;  // Range: -5.0 (excellent) to +5.0 (none)
+            let layerFactor = 1.0;  // Default: no adjustment
+
+            if (q4 === 3.0 || q4 === 6.0) {
+                // Q4 >= 20 meters: Apply layer factor
+                layerFactor = 0.8 + (totalSID / 20);  // Range: 0.55 to 1.05
+            }
+
+            // Location threat multiplier
+            const locationMultiplier = (q2 >= 6.0) ? 1.05 : 1.0;
+
+            // Calculate final distance vulnerability (capped at 10.0)
+            const distanceVuln = Math.min(10.0, baseDistVuln * layerFactor * locationMultiplier);
+
+            const threat = q2;
+            const vulnFactors = (
+                getQuestionScore('1') +
+                q3 +
+                q3_1 +
+                getQuestionScore('5') +
+                getQuestionScore('5.1') +
+                getQuestionScore('7') +
+                getQuestionScore('7.1') +
+                getQuestionScore('8') +
+                getQuestionScore('9') +
+                getQuestionScore('10') +
+                getQuestionScore('11') +
+                getQuestionScore('13')
+            ) / 12;
+
+            // Ensure vulnerability is non-negative
+            const adjustedVuln = Math.max(0, (vulnFactors * distanceVuln) / 2);
+            const finalRisk = threat * adjustedVuln;
+            const riskLevel = getRiskLevel(finalRisk);
+
+            return {
+                threat: threat.toFixed(2),
+                distanceVuln: distanceVuln.toFixed(2),
+                baseDistVuln: baseDistVuln.toFixed(2),
+                layerFactor: layerFactor.toFixed(2),
+                locationMultiplier: locationMultiplier.toFixed(2),
+                vulnFactors: vulnFactors.toFixed(2),
+                adjustedVuln: adjustedVuln.toFixed(2),
+                finalRisk: finalRisk.toFixed(2),
+                riskLevel: riskLevel
+            };
+        }
+
+        function calculateRisks() {
+            const physRisk = calculatePhysicalRisk();
+            const techRisk = calculateTechnicalRisk();
+
+            document.getElementById('physicalRiskSection').classList.remove('inactive');
+            document.getElementById('technicalRiskSection').classList.remove('inactive');
+
+            document.getElementById('physThreat').textContent = physRisk.threat;
+            document.getElementById('physDistVuln').textContent = physRisk.distanceVuln;
+            document.getElementById('physVulnFactors').textContent = physRisk.vulnFactors;
+            document.getElementById('physAdjVuln').textContent = physRisk.adjustedVuln;
+            document.getElementById('physRisk').textContent = physRisk.finalRisk;
+            document.getElementById('physRiskLevel').textContent = physRisk.riskLevel;
+
+            document.getElementById('techThreat').textContent = techRisk.threat;
+            document.getElementById('techDistVuln').textContent = techRisk.distanceVuln;
+            document.getElementById('techVulnFactors').textContent = techRisk.vulnFactors;
+            document.getElementById('techAdjVuln').textContent = techRisk.adjustedVuln;
+            document.getElementById('techRisk').textContent = techRisk.finalRisk;
+            document.getElementById('techRiskLevel').textContent = techRisk.riskLevel;
+
+            const physResultDiv = document.getElementById('physicalRiskResult');
+            physResultDiv.className = 'risk-result risk-level-' + physRisk.riskLevel.replace(' ', '-');
+
+            const techResultDiv = document.getElementById('technicalRiskResult');
+            techResultDiv.className = 'risk-result risk-level-' + techRisk.riskLevel.replace(' ', '-');
+
+            // Update Section 5 summary table
+            document.getElementById('physicalRiskSummary').textContent = physRisk.finalRisk + ' (' + physRisk.riskLevel + ')';
+            document.getElementById('technicalRiskSummary').textContent = techRisk.finalRisk + ' (' + techRisk.riskLevel + ')';
+
+            alert('Risk calculations complete!\n\nPhysical Risk: ' + physRisk.finalRisk + ' (' + physRisk.riskLevel + ')\nTechnical Risk: ' + techRisk.finalRisk + ' (' + techRisk.riskLevel + ')\n\nThese values have been populated in Section 5 of the main assessment.');
+
+            // Scroll to the top of Enclosure 1 (first page with title)
+            const enclosure1 = document.querySelector('.questionnaire-section');
+            if (enclosure1) {
+                window.scrollTo({top: enclosure1.offsetTop - 100, behavior: 'smooth'});
+            }
+        }
+
+        function showClassificationModal() {
+            const modal = document.getElementById('classificationModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+        }
+
+        function toggleClassificationFields() {
+            const cuiSelected = document.getElementById('cuiType').checked;
+            const classifiedSelected = document.getElementById('classifiedType').checked;
+
+            document.getElementById('cuiFields').classList.toggle('hidden', !cuiSelected);
+            document.getElementById('classifiedFields').classList.toggle('hidden', !classifiedSelected);
+        }
+
+        function applyClassification() {
+            const cuiSelected = document.getElementById('cuiType').checked;
+            const classifiedSelected = document.getElementById('classifiedType').checked;
+
+            if (!cuiSelected && !classifiedSelected) {
+                alert('Please select a classification type.');
+                return;
+            }
+
+            let bannerText = 'CUI';
+            let boxContent = '';
+
+            if (cuiSelected) {
+                bannerText = 'CUI';
+                const controlledBy = document.getElementById('cuiControlledBy').value || '';
+                const controlledBy2 = document.getElementById('cuiControlledBy2').value || '';
+                const category = document.getElementById('cuiCategory').value || '';
+                const dissemControl = document.getElementById('cuiDissemControl').value || '';
+                const poc = document.getElementById('cuiPOC').value || '';
+
+                let details = [];
+                if (controlledBy) details.push(`<div class="detail-line"><strong>Controlled by:</strong> ${controlledBy}</div>`);
+                if (controlledBy2) details.push(`<div class="detail-line"><strong>Controlled by:</strong> ${controlledBy2}</div>`);
+                if (category) details.push(`<div class="detail-line"><strong>Category:</strong> ${category}</div>`);
+                if (dissemControl) details.push(`<div class="detail-line"><strong>Limited Dissemination Control:</strong> ${dissemControl}</div>`);
+                if (poc) details.push(`<div class="detail-line"><strong>Point of Contact:</strong> ${poc}</div>`);
+
+                boxContent = details.join('');
+            } else if (classifiedSelected) {
+                const classLevel = document.getElementById('classificationLevel').value || '';
+                const classifiedBy = document.getElementById('classifiedBy').value || '';
+                const derivedFrom = document.getElementById('derivedFrom').value || '';
+                const declassifyOn = document.getElementById('declassifyOn').value || '';
+
+                bannerText = classLevel.toUpperCase();
+                boxContent = `
+                    <div class="detail-line"><strong>Classified By:</strong> ${classifiedBy}</div>
+                    <div class="detail-line"><strong>Derived From:</strong> ${derivedFrom}</div>
+                    <div class="detail-line"><strong>Declassify On:</strong> ${declassifyOn}</div>
+                `;
+            } else {
+                // UNCLASSIFIED case
+                boxContent = '<div class="detail-line"><span id="detailClassification">CUI</span></div>';
+            }
+
+            // Update screen banners
+            document.getElementById('topBanner').textContent = bannerText;
+            document.getElementById('bottomBanner').textContent = bannerText;
+            document.getElementById('classificationBoxContent').innerHTML = boxContent;
+
+            // Update all page data attributes for print
+            document.querySelectorAll('.page').forEach(page => {
+                page.setAttribute('data-classification-header', bannerText);
+                page.setAttribute('data-classification-footer', bannerText);
+            });
+
+            // Close the modal
+            const modal = document.getElementById('classificationModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
+
+        function saveAsPDF() {
+            // --- Step 1: Split plot plan images into separate page divs ---
+            var plotPlanPage = document.querySelector('.plot-plan-page');
+            var plotImages = plotPlanPage ? plotPlanPage.querySelectorAll('.plot-image-container') : [];
+            var overflowPages = [];
+
+            if (plotImages.length > 1) {
+                var parentContainer = plotPlanPage.parentNode;
+                var nextSibling = plotPlanPage.nextSibling;
+                var classHeader = plotPlanPage.getAttribute('data-classification-header') || 'CUI';
+                var classFooter = plotPlanPage.getAttribute('data-classification-footer') || 'CUI';
+
+                for (var i = 1; i < plotImages.length; i++) {
+                    var newPage = document.createElement('div');
+                    newPage.className = 'page plot-plan-overflow';
+                    newPage.setAttribute('data-classification-header', classHeader);
+                    newPage.setAttribute('data-classification-footer', classFooter);
+                    newPage.appendChild(plotImages[i]);
+                    overflowPages.push({ element: newPage, originalImage: plotImages[i] });
+                    parentContainer.insertBefore(newPage, nextSibling);
+                }
+            }
+
+            // --- Step 2: Inject classification banner elements ---
+            // Safari does not repeat position:fixed elements on each printed page.
+            // Detect Safari and use static in-flow banners per page div instead.
+            var injectedBanners = [];
+            var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            var firstPage = document.querySelector('.page');
+            var bannerText = (firstPage && firstPage.getAttribute('data-classification-header')) || 'CUI';
+
+            if (isSafari) {
+                // Safari: inject static banner elements as first/last child of each page div
+                var allPrintPages = document.querySelectorAll('.page, .plot-plan-overflow');
+                allPrintPages.forEach(function(page) {
+                    var hText = page.getAttribute('data-classification-header') || bannerText;
+                    var fText = page.getAttribute('data-classification-footer') || bannerText;
+
+                    var headerEl = document.createElement('div');
+                    headerEl.className = 'print-banner-safari-header';
+                    headerEl.textContent = hText;
+                    page.insertBefore(headerEl, page.firstChild);
+                    injectedBanners.push(headerEl);
+
+                    var footerEl = document.createElement('div');
+                    footerEl.className = 'print-banner-safari-footer';
+                    footerEl.textContent = fText;
+                    page.appendChild(footerEl);
+                    injectedBanners.push(footerEl);
+                });
+            } else {
+                // Chrome/Edge: single pair of position:fixed banners repeats on every page
+                var headerEl = document.createElement('div');
+                headerEl.className = 'print-banner-header';
+                headerEl.textContent = bannerText;
+                document.body.appendChild(headerEl);
+                injectedBanners.push(headerEl);
+
+                var footerEl = document.createElement('div');
+                footerEl.className = 'print-banner-footer';
+                footerEl.textContent = bannerText;
+                document.body.appendChild(footerEl);
+                injectedBanners.push(footerEl);
+            }
+
+            window.print();
+
+            // --- Step 3: Remove injected banners ---
+            injectedBanners.forEach(function(el) {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            });
+
+            // --- Step 4: Restore plot plan images ---
+            if (overflowPages.length > 0) {
+                var imagesContainer = document.getElementById('plotPlanImages');
+                for (var i = 0; i < overflowPages.length; i++) {
+                    imagesContainer.appendChild(overflowPages[i].originalImage);
+                    overflowPages[i].element.parentNode.removeChild(overflowPages[i].element);
+                }
+            }
+        }
+
+        async function generateCompleteMergedPDF() {
+            try {
+                // Check if libraries are loaded
+                if (typeof html2pdf === 'undefined' || typeof PDFLib === 'undefined') {
+                    alert('PDF libraries are loading... Please wait a moment and try again.');
+                    return;
+                }
+
+                const { PDFDocument, StandardFonts, rgb } = PDFLib;
+
+                // FIRST: Prompt for save location (while in user gesture context)
+                let fileHandle = null;
+                let useFilePicker = false;
+
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        fileHandle = await window.showSaveFilePicker({
+                            suggestedName: 'ICD705_Complete_Risk_Assessment.pdf',
+                            types: [{
+                                description: 'PDF Files',
+                                accept: { 'application/pdf': ['.pdf'] }
+                            }]
+                        });
+                        useFilePicker = true;
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            // User cancelled
+                            return;
+                        }
+                        // If error, fall back to regular download
+                        console.warn('File picker not available, using download fallback');
+                    }
+                }
+
+                alert('Generating complete merged PDF...\n\nThis may take a moment. Please wait.');
+
+                // Step 1: Hide AO ACKNOWLEDGEMENT page, buttons, and screen banners before generating PDF
+                const pagesForAO = document.querySelectorAll('.page');
+                let aoAcknowledgementPage = null;
+                let aoAcknowledgementHidden = false;
+
+                // Find the specific AO Acknowledgment page
+                pagesForAO.forEach(page => {
+                    if (page.textContent.includes('ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT')) {
+                        const sectionHeader = page.querySelector('.section-header');
+                        if (sectionHeader && sectionHeader.textContent.trim() === 'ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT') {
+                            aoAcknowledgementPage = page;
+                            page.style.display = 'none';
+                            aoAcknowledgementHidden = true;
+                        }
+                    }
+                });
+
+                // Store original button display and visibility state BEFORE hiding
+                const buttons = document.querySelectorAll('.button-group-bottom-left');
+                const buttonGroup = document.querySelector('.button-group-bottom-left');
+                const originalButtonDisplay = buttonGroup ? buttonGroup.style.display : '';
+                const originalButtonVisibility = buttonGroup ? buttonGroup.style.visibility : '';
+
+                // Hide all buttons using visibility to maintain layout spacing
+                buttons.forEach(btn => btn.style.visibility = 'hidden');
+
+                // Hide file upload inputs and buttons
+                const fileInputs = document.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => input.style.display = 'none');
+                const uploadButtons = document.querySelectorAll('button[onclick*="Upload"]');
+                uploadButtons.forEach(btn => btn.style.display = 'none');
+
+                // Hide image remove buttons (red X)
+                const removeImageButtons = document.querySelectorAll('.plot-image-remove');
+                removeImageButtons.forEach(btn => btn.style.display = 'none');
+
+                // Hide calculate risk assessment button
+                const calculateButton = document.querySelectorAll('.button-container');
+                calculateButton.forEach(container => container.style.display = 'none');
+
+                // Hide screen classification banners
+                const screenBanners = document.querySelectorAll('.classification-banner, .classification-footer');
+                screenBanners.forEach(banner => banner.style.display = 'none');
+
+                // Replace textareas with divs for PDF generation to ensure top-left alignment
+                const allTextareas = document.querySelectorAll('textarea');
+                const textareaReplacements = [];
+
+                allTextareas.forEach((textarea, index) => {
+                    // Create a div to replace the textarea
+                    const div = document.createElement('div');
+                    div.textContent = textarea.value;
+
+                    // Copy computed styles
+                    const computedStyle = window.getComputedStyle(textarea);
+                    div.style.width = textarea.offsetWidth + 'px';
+                    div.style.fontFamily = computedStyle.fontFamily;
+                    div.style.fontSize = computedStyle.fontSize;
+                    div.style.border = 'none';
+                    div.style.borderBottom = '1px solid #000';
+                    div.style.background = 'transparent';
+                    div.style.whiteSpace = 'pre-wrap';
+                    div.style.wordWrap = 'break-word';
+                    div.style.textAlign = 'left';
+                    div.style.verticalAlign = 'top';
+                    div.style.padding = '0';
+                    div.style.margin = '0';
+                    div.style.minHeight = '20px';
+                    div.style.lineHeight = '1.2';
+
+                    // Store original textarea and replacement div
+                    textareaReplacements[index] = {
+                        original: textarea,
+                        replacement: div,
+                        parent: textarea.parentNode,
+                        nextSibling: textarea.nextSibling
+                    };
+
+                    // Replace textarea with div
+                    textarea.parentNode.replaceChild(div, textarea);
+                });
+
+                // Hide calculation guide, purpose/scope, general, and guide pages to reduce file size
+                const calcGuide = document.querySelector('.calc-guide');
+                const originalCalcGuideDisplay = calcGuide ? calcGuide.style.display : '';
+                if (calcGuide) {
+                    calcGuide.style.display = 'none';
+                }
+
+                const purposeScopePage = document.querySelector('.purpose-scope-page');
+                const originalPurposeScopeDisplay = purposeScopePage ? purposeScopePage.style.display : '';
+                if (purposeScopePage) {
+                    purposeScopePage.style.display = 'none';
+                    purposeScopePage.style.visibility = 'hidden';
+                    purposeScopePage.style.height = '0';
+                    purposeScopePage.style.overflow = 'hidden';
+                }
+
+                const generalPage = document.querySelector('.general-page');
+                const originalGeneralDisplay = generalPage ? generalPage.style.display : '';
+                if (generalPage) {
+                    generalPage.style.display = 'none';
+                    generalPage.style.visibility = 'hidden';
+                    generalPage.style.height = '0';
+                    generalPage.style.overflow = 'hidden';
+                }
+
+                const guidePage = document.querySelector('.guide-page');
+                const originalGuideDisplay = guidePage ? guidePage.style.display : '';
+                if (guidePage) {
+                    guidePage.style.display = 'none';
+                    guidePage.style.visibility = 'hidden';
+                    guidePage.style.height = '0';
+                    guidePage.style.overflow = 'hidden';
+                }
+
+                // Step 2: Adjust page styling for proper top spacing (keep original left/right margins)
+                const allPages = document.querySelectorAll('.page');
+                const originalPageStyles = [];
+
+                allPages.forEach((pg, index) => {
+                    if (pg.style.display !== 'none') {
+                        // Store original styles
+                        originalPageStyles[index] = {
+                            paddingTop: pg.style.paddingTop,
+                            pageBreakAfter: pg.style.pageBreakAfter,
+                            minHeight: pg.style.minHeight,
+                            pageBreakBefore: pg.style.pageBreakBefore,
+                            maxWidth: pg.style.maxWidth,
+                            width: pg.style.width
+                        };
+
+                        // Remove page breaks - html2pdf will handle pagination
+                        // EXCEPT for plot-plan-page which should always start on new page
+                        if (pg.classList.contains('plot-plan-page')) {
+                            pg.style.pageBreakBefore = 'always';
+                        } else {
+                            pg.style.pageBreakAfter = 'avoid';
+                            pg.style.pageBreakBefore = 'auto';
+                        }
+
+                        // Constrain page width to fit within margins with 0.25in buffer
+                        pg.style.maxWidth = '7.0in';
+                        pg.style.width = '7.0in';
+
+                        // DON'T adjust cover page - it has its own layout
+                        if (!pg.classList.contains('cover-page')) {
+                            // Regular pages and questionnaire pages: Reduced by 50% = 0.75" / 2 = 0.375"
+                            pg.style.paddingTop = '0.375in';
+                            pg.style.minHeight = 'auto';
+                        }
+                    }
+                });
+
+                // Prevent images from breaking across pages
+                const images = document.querySelectorAll('#plotPlanImages img, img');
+                const originalImageStyles = [];
+                images.forEach((img, index) => {
+                    originalImageStyles[index] = {
+                        pageBreakInside: img.style.pageBreakInside,
+                        display: img.style.display,
+                        maxWidth: img.style.maxWidth
+                    };
+                    img.style.pageBreakInside = 'avoid';
+                    img.style.display = 'block';
+                    img.style.maxWidth = '100%';
+                });
+
+                // Step 3: Generate pages 1-12 using html2pdf (no banners yet)
+                const element = document.querySelector('.container');
+
+                // Constrain container width with 0.25in buffer and balanced margins
+                // Page: 8.5in, Buffer: 0.25in, Available: 8.5 - 0.3 = 8.2in
+                // Content: 7.0in, Margins: (8.2 - 7.0) / 2 = 0.6in each side
+                const originalMaxWidth = element.style.maxWidth;
+                const originalWidth = element.style.width;
+                element.style.maxWidth = '6.8in';
+                element.style.width = '6.8in';
+
+                // Configure html2pdf options - equal margins with buffer
+                // Margin order: [top, left, bottom, right]
+                // Top/bottom margins increased to 0.75in to provide buffer below/above classification banners
+                const opt = {
+                    margin: [0.75, 0.3, 0.75, 0.65],
+                    filename: 'temp.pdf',
+                    image: { type: 'jpeg', quality: 0.7 },
+                    html2canvas: {
+                        scale: 1.6,
+                        useCORS: true,
+                        logging: false,
+                        imageTimeout: 0,
+                        onclone: function(clonedDoc) {
+                            // Safari fix: replace CSS color() function values with rgb fallback
+                            // html2canvas cannot parse color(display-p3 ...) used by Safari
+                            var allElements = clonedDoc.querySelectorAll('*');
+                            var colorProps = ['color', 'background-color', 'border-color',
+                                'border-top-color', 'border-right-color', 'border-bottom-color',
+                                'border-left-color', 'outline-color', 'text-decoration-color',
+                                'column-rule-color', 'caret-color'];
+                            for (var i = 0; i < allElements.length; i++) {
+                                var el = allElements[i];
+                                var cs = window.getComputedStyle(el);
+                                for (var j = 0; j < colorProps.length; j++) {
+                                    var val = '';
+                                    try { val = cs.getPropertyValue(colorProps[j]); } catch(e) { continue; }
+                                    if (val && val.indexOf('color(') !== -1) {
+                                        el.style.setProperty(colorProps[j], 'rgb(0, 0, 0)', 'important');
+                                    }
+                                }
+                                // Also check background shorthand
+                                var bg = '';
+                                try { bg = cs.getPropertyValue('background'); } catch(e) {}
+                                if (bg && bg.indexOf('color(') !== -1) {
+                                    el.style.setProperty('background', bg.replace(/color\([^)]*\)/g, 'rgb(0, 0, 0)'), 'important');
+                                }
+                            }
+                        }
+                    },
+                    jsPDF: {
+                        unit: 'in',
+                        format: 'letter',
+                        orientation: 'portrait',
+                        compress: true
+                    },
+                    pagebreak: {
+                        mode: 'avoid-all',
+                        before: ['.plot-plan-page'],
+                        avoid: ['img', '.section-row', '.section-row-xlarge', '.page']
+                    }
+                };
+
+                // Generate main PDF as ArrayBuffer
+                window._pdfGenerating = true;
+                let mainPdfArrayBuffer;
+                try {
+                    mainPdfArrayBuffer = await html2pdf()
+                        .set(opt)
+                        .from(element)
+                        .outputPdf('arraybuffer');
+                } finally {
+                    window._pdfGenerating = false;
+                }
+
+                // Step 4: Clean up - restore ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT, buttons, screen banners, and page styles
+                if (aoAcknowledgementHidden && aoAcknowledgementPage) {
+                    aoAcknowledgementPage.style.display = '';
+                }
+                buttons.forEach(btn => btn.style.visibility = '');
+                fileInputs.forEach(input => input.style.display = '');
+                uploadButtons.forEach(btn => btn.style.display = '');
+                calculateButton.forEach(container => container.style.display = '');
+                screenBanners.forEach(banner => banner.style.display = '');
+                removeImageButtons.forEach(btn => btn.style.display = '');
+
+                // Restore textareas by replacing divs back with original textareas
+                textareaReplacements.forEach(replacement => {
+                    if (replacement.replacement.parentNode) {
+                        replacement.replacement.parentNode.replaceChild(replacement.original, replacement.replacement);
+                    } else if (replacement.nextSibling) {
+                        replacement.parent.insertBefore(replacement.original, replacement.nextSibling);
+                    } else {
+                        replacement.parent.appendChild(replacement.original);
+                    }
+                });
+
+                // Restore calculation guide, purpose/scope, general, and guide pages
+                if (calcGuide) {
+                    calcGuide.style.display = originalCalcGuideDisplay;
+                }
+                if (purposeScopePage) {
+                    purposeScopePage.style.display = originalPurposeScopeDisplay;
+                    purposeScopePage.style.visibility = '';
+                    purposeScopePage.style.height = '';
+                    purposeScopePage.style.overflow = '';
+                }
+                if (generalPage) {
+                    generalPage.style.display = originalGeneralDisplay;
+                    generalPage.style.visibility = '';
+                    generalPage.style.height = '';
+                    generalPage.style.overflow = '';
+                }
+                if (guidePage) {
+                    guidePage.style.display = originalGuideDisplay;
+                    guidePage.style.visibility = '';
+                    guidePage.style.height = '';
+                    guidePage.style.overflow = '';
+                }
+
+                if (buttonGroup) {
+                    buttonGroup.style.display = originalButtonDisplay;
+                    buttonGroup.style.visibility = originalButtonVisibility;
+                }
+
+                // Restore container width
+                element.style.maxWidth = originalMaxWidth;
+                element.style.width = originalWidth;
+
+                allPages.forEach((pg, index) => {
+                    if (originalPageStyles[index]) {
+                        pg.style.paddingTop = originalPageStyles[index].paddingTop || '';
+                        pg.style.pageBreakAfter = originalPageStyles[index].pageBreakAfter || '';
+                        pg.style.pageBreakBefore = originalPageStyles[index].pageBreakBefore || '';
+                        pg.style.minHeight = originalPageStyles[index].minHeight || '';
+                        pg.style.maxWidth = originalPageStyles[index].maxWidth || '';
+                        pg.style.width = originalPageStyles[index].width || '';
+                    }
+                });
+
+                images.forEach((img, index) => {
+                    if (originalImageStyles[index]) {
+                        img.style.pageBreakInside = originalImageStyles[index].pageBreakInside || '';
+                        img.style.display = originalImageStyles[index].display || '';
+                        img.style.maxWidth = originalImageStyles[index].maxWidth || '';
+                    }
+                });
+
+                // Step 5: Load main PDF into pdf-lib and add classification banners
+                const mainPdf = await PDFDocument.load(mainPdfArrayBuffer);
+
+                // Embed fonts for banners
+                const mainTimesRoman = await mainPdf.embedFont(StandardFonts.TimesRoman);
+
+                // Add classification banners to each page of main PDF
+                const mainClassificationText = document.getElementById('topBanner').textContent;
+                const pagesInMainPdf = mainPdf.getPages();
+
+                pagesInMainPdf.forEach(page => {
+                    const { width, height } = page.getSize();
+                    const bannerY = height - 36; // 0.5" from top (36 points)
+                    const bottomBannerY = 36; // 0.5" from bottom (36 points)
+
+                    // Top banner
+                    page.drawText(mainClassificationText, {
+                        x: width / 2 - (mainClassificationText.length * 3.5),
+                        y: bannerY,
+                        size: 12,
+                        font: mainTimesRoman,
+                        color: rgb(0, 0, 0),
+                    });
+
+                    // Bottom banner
+                    page.drawText(mainClassificationText, {
+                        x: width / 2 - (mainClassificationText.length * 3.5),
+                        y: bottomBannerY - 12,
+                        size: 12,
+                        font: mainTimesRoman,
+                        color: rgb(0, 0, 0),
+                    });
+                });
+
+                // Step 6: Create ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT as fillable PDF
+                const aoAcknowledgementPdf = await PDFDocument.create();
+                aoAcknowledgementPdf.setTitle('ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT');
+
+                // Embed fonts
+                const timesRoman = await aoAcknowledgementPdf.embedFont(StandardFonts.TimesRoman);
+                const timesRomanBold = await aoAcknowledgementPdf.embedFont(StandardFonts.TimesRomanBold);
+
+                const form = aoAcknowledgementPdf.getForm();
+                const pageWidth = 612; // 8.5 inches
+                const pageHeight = 792; // 11 inches
+                const leftMargin = 72; // 1 inch
+                const rightMargin = 72; // 1 inch
+                const contentWidth = pageWidth - leftMargin - rightMargin;
+
+                // Create page
+                const page = aoAcknowledgementPdf.addPage([pageWidth, pageHeight]);
+                let yPosition = pageHeight - 100;
+
+                // Classification banner at top (0.75" from top = 54 points) - transparent background
+                const classificationText = document.getElementById('topBanner').textContent;
+                const bannerHeight = 20;
+                const topBannerY = pageHeight - 54; // 0.75 inches from top
+                // No rectangle drawn for transparent background
+                page.drawText(classificationText, {
+                    x: pageWidth / 2 - (classificationText.length * 3.5),
+                    y: topBannerY + 4,
+                    size: 12,
+                    font: timesRoman,
+                    color: rgb(0, 0, 0),
+                });
+
+                // Section header
+                page.drawRectangle({
+                    x: leftMargin,
+                    y: yPosition - 8,
+                    width: contentWidth,
+                    height: 25,
+                    color: rgb(0.827, 0.827, 0.827), // #d3d3d3
+                    borderWidth: 1,
+                    borderColor: rgb(0, 0, 0),
+                });
+                page.drawText('ACCREDITING OFFICIAL (AO) ACKNOWLEDGMENT', {
+                    x: leftMargin + 10,
+                    y: yPosition,
+                    size: 12,
+                    font: timesRomanBold,
+                });
+                yPosition -= 40;
+
+                // Checkboxes for approval status
+                const checkboxSize = 15;
+                const checkboxY = yPosition;
+
+                // Checkbox 1: Approved w/out comments
+                const checkbox1 = form.createCheckBox('approvedWithoutComments');
+                checkbox1.addToPage(page, {
+                    x: leftMargin,
+                    y: checkboxY,
+                    width: checkboxSize,
+                    height: checkboxSize
+                });
+                page.drawText('Approved without comments', {
+                    x: leftMargin + checkboxSize + 5,
+                    y: checkboxY + 2,
+                    size: 11,
+                    font: timesRoman,
+                });
+
+                // Checkbox 2: Approved w/comments
+                const checkbox2 = form.createCheckBox('approvedWithComments');
+                checkbox2.addToPage(page, {
+                    x: leftMargin + 180,
+                    y: checkboxY,
+                    width: checkboxSize,
+                    height: checkboxSize
+                });
+                page.drawText('Approved with comments', {
+                    x: leftMargin + 180 + checkboxSize + 5,
+                    y: checkboxY + 2,
+                    size: 11,
+                    font: timesRoman,
+                });
+
+                // Checkbox 3: Disapproved/Sent Back
+                const checkbox3 = form.createCheckBox('disapprovedSentBack');
+                checkbox3.addToPage(page, {
+                    x: leftMargin + 350,
+                    y: checkboxY,
+                    width: checkboxSize,
+                    height: checkboxSize
+                });
+                page.drawText('Disapproved/Sent Back', {
+                    x: leftMargin + 350 + checkboxSize + 5,
+                    y: checkboxY + 2,
+                    size: 11,
+                    font: timesRoman,
+                });
+
+                yPosition -= 35;
+
+                // Instruction text
+                page.drawText('This section to be completed only by the AO and may include CTTA comments.', {
+                    x: leftMargin,
+                    y: yPosition,
+                    size: 10,
+                    font: timesRoman,
+                    maxWidth: contentWidth,
+                });
+                yPosition -= 30;
+
+                // Large fillable text area
+                const textField = form.createTextField('aoComments');
+                textField.addToPage(page, {
+                    x: leftMargin,
+                    y: 200,
+                    width: contentWidth,
+                    height: 400,
+                    borderWidth: 1,
+                    borderColor: rgb(0, 0, 0),
+                });
+                textField.enableMultiline();
+                textField.setFontSize(10);
+
+                // Classification banner at bottom (0.75" from bottom = 54 points) - transparent background
+                const bottomBannerY = 54; // 0.75 inches from bottom
+                // No rectangle drawn for transparent background
+                page.drawText(classificationText, {
+                    x: pageWidth / 2 - (classificationText.length * 3.5),
+                    y: bottomBannerY - bannerHeight + 4,
+                    size: 12,
+                    font: timesRoman,
+                    color: rgb(0, 0, 0),
+                });
+
+                // Update field appearances and enable needAppearances for MS Edge
+                form.updateFieldAppearances(timesRoman);
+
+                // Set the needAppearances flag for better MS Edge compatibility
+                const acroForm = aoAcknowledgementPdf.context.lookup(aoAcknowledgementPdf.catalog.get(PDFLib.PDFName.of('AcroForm')));
+                if (acroForm) {
+                    acroForm.set(PDFLib.PDFName.of('NeedAppearances'), PDFLib.PDFBool.True);
+                }
+
+                // Step 7: Merge PDFs
+                const mergedPdf = await PDFDocument.create();
+
+                // Copy all pages from main PDF
+                const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
+                mainPages.forEach(page => mergedPdf.addPage(page));
+
+                // Copy AO ACKNOWLEDGEMENT
+                const aoAcknowledgementPages = await mergedPdf.copyPages(aoAcknowledgementPdf, [0]);
+                aoAcknowledgementPages.forEach(page => mergedPdf.addPage(page));
+
+                // Step 8: Save merged PDF
+                const mergedPdfBytes = await mergedPdf.save();
+                const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+
+                // Save using the fileHandle we got earlier
+                if (useFilePicker && fileHandle) {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+
+                    alert('PDF GENERATION COMPLETE!\n\nYour complete PDF has been saved.');
+                } else {
+                    // Fallback to regular download
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'ICD705_Complete_Risk_Assessment.pdf';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+
+                    alert('PDF GENERATION COMPLETE!\n\nYour complete PDF has been downloaded.\n\nNote: Your browser does not support save location picker.');
+                }
+
+            } catch (error) {
+                console.error('Error generating merged PDF:', error);
+                alert('Error generating PDF: ' + error.message + '\n\nPlease check the browser console for details.');
+            }
+        }
+
+        function saveFile() {
+            // Clone the document to preserve current state
+            const clone = document.documentElement.cloneNode(true);
+
+            // Save all text input values as attributes
+            document.querySelectorAll('input[type="text"]').forEach((input, index) => {
+                const clonedInput = clone.querySelectorAll('input[type="text"]')[index];
+                if (clonedInput && input.value) {
+                    clonedInput.setAttribute('value', input.value);
+                }
+            });
+
+            // Save all textarea values
+            document.querySelectorAll('textarea').forEach((textarea, index) => {
+                const clonedTextarea = clone.querySelectorAll('textarea')[index];
+                if (clonedTextarea && textarea.value) {
+                    clonedTextarea.textContent = textarea.value;
+                }
+            });
+
+            // Save all radio button states
+            document.querySelectorAll('input[type="radio"]').forEach((radio, index) => {
+                const clonedRadio = clone.querySelectorAll('input[type="radio"]')[index];
+                if (clonedRadio) {
+                    if (radio.checked) {
+                        clonedRadio.setAttribute('checked', 'checked');
+                    } else {
+                        clonedRadio.removeAttribute('checked');
+                    }
+                }
+            });
+
+            // Save all checkbox states
+            document.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
+                const clonedCheckbox = clone.querySelectorAll('input[type="checkbox"]')[index];
+                if (clonedCheckbox) {
+                    if (checkbox.checked) {
+                        clonedCheckbox.setAttribute('checked', 'checked');
+                    } else {
+                        clonedCheckbox.removeAttribute('checked');
+                    }
+                }
+            });
+
+            // Save classification banner content
+            const topBanner = clone.querySelector('#topBanner');
+            const bottomBanner = clone.querySelector('#bottomBanner');
+            if (topBanner) topBanner.textContent = document.getElementById('topBanner').textContent;
+            if (bottomBanner) bottomBanner.textContent = document.getElementById('bottomBanner').textContent;
+
+            // Save classification box content
+            const classBoxContent = clone.querySelector('#classificationBoxContent');
+            if (classBoxContent) {
+                classBoxContent.innerHTML = document.getElementById('classificationBoxContent').innerHTML;
+            }
+
+            // Get the HTML content
+            const htmlContent = '<!DOCTYPE html>\n' + clone.outerHTML;
+
+            // Create a Blob with the HTML content
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+
+            // Try to use the File System Access API for "Save As" dialog (modern browsers)
+            if (window.showSaveFilePicker) {
+                (async () => {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: 'ICD705_Complete_Risk_Assessment.html',
+                            types: [{
+                                description: 'HTML File',
+                                accept: { 'text/html': ['.html'] }
+                            }]
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                    } catch (err) {
+                        // User cancelled or error occurred
+                        if (err.name !== 'AbortError') {
+                            console.error('Error saving file:', err);
+                        }
+                    }
+                })();
+            } else {
+                // Fallback for older browsers - standard download
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'ICD705_Complete_Risk_Assessment.html';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }
+        }
+
+        function resetForm() {
+            if (confirm('Are you sure you want to reset the entire form? All entered data will be lost.')) {
+                // Reset all text inputs
+                document.querySelectorAll('input[type="text"]').forEach(input => {
+                    input.value = '';
+                });
+
+                // Reset all textareas
+                document.querySelectorAll('textarea').forEach(textarea => {
+                    textarea.value = '';
+                });
+
+                // Reset all radio buttons and checkboxes
+                document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
+                    input.checked = false;
+                });
+
+                // Reset all option selections
+                document.querySelectorAll('.option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+
+                // Reset risk sections
+                document.getElementById('physicalRiskSection').classList.add('inactive');
+                document.getElementById('technicalRiskSection').classList.add('inactive');
+
+                document.getElementById('physicalRiskSummary').textContent = 'SELECT';
+                document.getElementById('technicalRiskSummary').textContent = 'SELECT';
+
+                // Reset classification
+                document.getElementById('topBanner').textContent = 'UNCLASSIFIED';
+                document.getElementById('bottomBanner').textContent = 'UNCLASSIFIED';
+                document.getElementById('classificationBoxContent').innerHTML = '<div class="detail-line"><span id="detailClassification">UNCLASSIFIED</span></div>';
+
+                // Reset page data attributes
+                document.querySelectorAll('.page').forEach(page => {
+                    page.setAttribute('data-classification-header', 'CUI');
+                    page.setAttribute('data-classification-footer', 'CUI');
+                });
+
+                alert('Form has been reset.');
+            }
+        }
+
+        // Image handling for Plot Plan section
+        let plotImages = [];
+
+        function handleImageUpload(files) {
+            const MAX_IMAGES = 10;
+
+            // Check total image count
+            if (plotImages.length >= MAX_IMAGES) {
+                alert('Maximum ' + MAX_IMAGES + ' images allowed. Please remove existing images first.');
+                return;
+            }
+
+            if (plotImages.length + files.length > MAX_IMAGES) {
+                alert('Adding these files would exceed the maximum of ' + MAX_IMAGES + ' images.\nCurrent: ' + plotImages.length + ', Attempting to add: ' + files.length);
+                return;
+            }
+
+            let validFiles = 0;
+            let errors = [];
+
+            Array.from(files).forEach(function(file) {
+                // Validate file
+                const validation = validateFile(file, 5);
+
+                if (!validation.valid) {
+                    errors.push(validation.error);
+                    return;
+                }
+
+                // Load and validate image using browser's native image loading
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const MAX_WIDTH = 4096;
+                        const MAX_HEIGHT = 4096;
+
+                        if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
+                            alert('Image "' + file.name + '" dimensions (' + img.width + 'x' + img.height + ') exceed maximum (' + MAX_WIDTH + 'x' + MAX_HEIGHT + ')');
+                            return;
+                        }
+
+                        // All validations passed - add image
+                        addPlotImage(img.src, file.name);
+                        validFiles++;
+                    };
+
+                    img.onerror = function() {
+                        alert('File "' + file.name + '" is not a valid image file.');
+                    };
+
+                    img.src = e.target.result;
+                };
+
+                reader.onerror = function() {
+                    alert('Error reading file: ' + file.name);
+                };
+
+                reader.readAsDataURL(file);
+            });
+
+            // Show any validation errors
+            if (errors.length > 0) {
+                alert('File Validation Errors:\n\n' + errors.join('\n\n'));
+            }
+        }
+
+        // Resize image to fit within one printed page
+        // Max dimensions: ~5.5in wide x 7in tall at 150 DPI = 825x1050 pixels
+        // Leaves room for classification header/footer, page padding, and image comment
+        function resizeImageToPage(dataUrl, callback) {
+            var PAGE_MAX_WIDTH = 825;
+            var PAGE_MAX_HEIGHT = 1050;
+            var img = new Image();
+            img.onload = function() {
+                if (img.width <= PAGE_MAX_WIDTH && img.height <= PAGE_MAX_HEIGHT) {
+                    callback(dataUrl);
+                    return;
+                }
+                var scale = Math.min(PAGE_MAX_WIDTH / img.width, PAGE_MAX_HEIGHT / img.height);
+                var newWidth = Math.round(img.width * scale);
+                var newHeight = Math.round(img.height * scale);
+                var canvas = document.createElement('canvas');
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+                callback(canvas.toDataURL('image/jpeg', 0.92));
+            };
+            img.onerror = function() {
+                callback(dataUrl);
+            };
+            img.src = dataUrl;
+        }
+
+        function addPlotImage(dataUrl, filename) {
+            resizeImageToPage(dataUrl, function(resizedUrl) {
+                plotImages.push({ dataUrl: resizedUrl, filename, comment: '' });
+                displayPlotImages();
+            });
+        }
+
+        function removePlotImage(index) {
+            plotImages.splice(index, 1);
+            displayPlotImages();
+        }
+
+        function updateImageComment(index, comment) {
+            if (plotImages[index]) {
+                plotImages[index].comment = comment;
+            }
+        }
+
+        function displayPlotImages() {
+            const container = document.getElementById('plotPlanImages');
+            container.innerHTML = '';
+
+            plotImages.forEach((img, index) => {
+                const div = document.createElement('div');
+                div.className = 'plot-image-container';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'plot-image-wrapper';
+
+                const imgElement = document.createElement('img');
+                imgElement.src = img.dataUrl;
+                imgElement.alt = img.filename || 'Plot Plan Image';
+                imgElement.title = img.filename || 'Plot Plan Image';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'plot-image-remove';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.onclick = () => removePlotImage(index);
+
+                wrapper.appendChild(imgElement);
+                wrapper.appendChild(removeBtn);
+
+                const label = document.createElement('label');
+                label.className = 'plot-image-label';
+                label.textContent = 'Image Comment:';
+
+                const commentBox = document.createElement('textarea');
+                commentBox.className = 'plot-image-comment';
+                commentBox.placeholder = 'Enter description or notes for this image...';
+                commentBox.value = img.comment || '';
+                commentBox.onchange = function() {
+                    updateImageComment(index, this.value);
+                };
+                commentBox.oninput = function() {
+                    updateImageComment(index, this.value);
+                };
+
+                div.appendChild(wrapper);
+                div.appendChild(label);
+                div.appendChild(commentBox);
+                container.appendChild(div);
+            });
+        }
+
+        // Handle paste events for images
+        function handlePaste(e) {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        addPlotImage(event.target.result, 'pasted-image-' + Date.now() + '.png');
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        }
+
+        /**
+         * Conditional Question Logic
+         * Controls which questions/options are available based on previous answers
+         */
+        function updateConditionalQuestions() {
+            handleQuestion4_Q3();  // Q4 -> Q3 (runs first - most restrictive)
+            handleQuestion2_Q3();  // Q2 -> Q3 (runs second)
+            handleQuestion3_1();
+            handleQuestion4_Q6();
+            handleQuestion5_1();
+            handleQuestion7_1();
+        }
+
+        function handleQuestion4_Q3() {
+            const q4Selected = document.querySelector('input[name="q4"]:checked');
+            const q3Inputs = document.querySelectorAll('input[name="q3"]');
+            const q3NaSidInput = document.querySelector('input[name="q3"][value="5.0"]');
+            const q3_1Inputs = document.querySelectorAll('input[name="q3.1"]');
+
+            if (q4Selected && parseFloat(q4Selected.value) === 10.0) {
+                // Check if it's the multi-tenant option (first Q4 option with value 10.0)
+                const q4Text = q4Selected.parentElement.textContent;
+                if (q4Text.includes('multi-tenant')) {
+                    // Q4 = Multi-tenant shared perimeter - FORCE "No SID"
+
+                    // Disable all Q3 options EXCEPT "N/A, no SID"
+                    q3Inputs.forEach(input => {
+                        if (parseFloat(input.value) !== 5.0) {
+                            input.disabled = true;
+                            // Clear if selected
+                            if (input.checked) {
+                                input.checked = false;
+                                const parent = input.closest('.option');
+                                if (parent) parent.classList.remove('selected');
+                            }
+                        } else {
+                            // Enable "N/A, no SID" option
+                            input.disabled = false;
+                        }
+                    });
+
+                    // Auto-select "N/A, no SID" if nothing selected
+                    const q3Selected = document.querySelector('input[name="q3"]:checked');
+                    if (!q3Selected && q3NaSidInput) {
+                        q3NaSidInput.checked = true;
+                        const parent = q3NaSidInput.closest('.option');
+                        if (parent) parent.classList.add('selected');
+                    }
+
+                    // Disable all Q3.1 options (no additional layers possible)
+                    q3_1Inputs.forEach(input => {
+                        input.disabled = true;
+                        input.checked = false;
+                        const parent = input.closest('.option');
+                        if (parent) parent.classList.remove('selected');
+                    });
+                }
+            } else {
+                // Q4 is NOT multi-tenant shared perimeter - enable all Q3 options
+                // (unless blocked by Q2 -> Q3 logic, which runs next)
+                q3Inputs.forEach(input => {
+                    input.disabled = false;
+                });
+            }
+        }
+
+        function handleQuestion2_Q3() {
+            const q2Selected = document.querySelector('input[name="q2"]:checked');
+            const q4Selected = document.querySelector('input[name="q4"]:checked');
+            const q3NaSidInput = document.querySelector('input[name="q3"][value="5.0"]');
+
+            // Check if Q4 is multi-tenant (shared perimeter) - this overrides Q2 logic
+            let isMultiTenant = false;
+            if (q4Selected && parseFloat(q4Selected.value) === 10.0) {
+                const q4Text = q4Selected.parentElement.textContent;
+                if (q4Text.includes('multi-tenant')) {
+                    isMultiTenant = true;
+                }
+            }
+
+            if (q2Selected && !isMultiTenant) {
+                // Only apply Q2 logic if NOT multi-tenant (Q4 logic takes precedence)
+                const q2Value = parseFloat(q2Selected.value);
+                // If Q2 is "Outside the U.S." (values >= 6.0), disable "N/A, no SID"
+                if (q2Value >= 6.0) {
+                    if (q3NaSidInput) {
+                        q3NaSidInput.disabled = true;
+                        // Clear if selected
+                        if (q3NaSidInput.checked) {
+                            q3NaSidInput.checked = false;
+                            const parent = q3NaSidInput.closest('.option');
+                            if (parent) parent.classList.remove('selected');
+                        }
+                    }
+                } else {
+                    // Q2 is "Inside the U.S." (values < 6.0), enable "N/A, no SID"
+                    if (q3NaSidInput) {
+                        q3NaSidInput.disabled = false;
+                    }
+                }
+            }
+            // If isMultiTenant, do nothing - Q4 logic already handled it
+        }
+
+        function handleQuestion3_1() {
+            const q3Selected = document.querySelector('input[name="q3"]:checked');
+            const q3_1Inputs = document.querySelectorAll('input[name="q3.1"]');
+
+            if (q3Selected && parseFloat(q3Selected.value) === 5.0) {
+                // Q3 = "N/A, no SID" - no additional layers possible
+                q3_1Inputs.forEach(input => {
+                    input.disabled = true;
+                    input.checked = false;
+                    const parent = input.closest('.option');
+                    if (parent) parent.classList.remove('selected');
+                });
+            } else if (q3Selected) {
+                // Q3 = Has SID layers, additional layers are possible
+                q3_1Inputs.forEach(input => {
+                    input.disabled = false;
+                });
+            } else {
+                // No Q3 selected yet, disable Q3.1
+                q3_1Inputs.forEach(input => {
+                    input.disabled = true;
+                    input.checked = false;
+                    const parent = input.closest('.option');
+                    if (parent) parent.classList.remove('selected');
+                });
+            }
+        }
+
+        function handleQuestion4_Q6() {
+            const q4Selected = document.querySelector('input[name="q4"]:checked');
+            const q6Inputs = document.querySelectorAll('input[name="q6"]');
+
+            if (!q4Selected) {
+                // No Q4 selected, enable all Q6 options
+                q6Inputs.forEach(input => { input.disabled = false; });
+                return;
+            }
+
+            const q4Value = parseFloat(q4Selected.value);
+            const q4Text = q4Selected.closest('.option').querySelector('.option-text').textContent.toLowerCase();
+
+            // Determine Q4 type for 0-5m options
+            const q4IsMultiTenant = q4Text.includes('multi-tenant');
+            const q4IsSoleOccupant = q4Text.includes('solely occupied');
+            const q4IsUnknown = q4Text.includes('unknown');
+
+            // If Q4 is Unknown (10.0) or multi-tenant (10.0), enable ALL Q6 options
+            if (q4IsUnknown || (q4Value === 10.0 && q4IsMultiTenant)) {
+                q6Inputs.forEach(input => { input.disabled = false; });
+                return;
+            }
+
+            q6Inputs.forEach(input => {
+                const q6Value = parseFloat(input.value);
+                const q6Text = input.closest('.option').querySelector('.option-text').textContent.toLowerCase();
+
+                // Determine Q6 type
+                const q6IsWithinBuilding = q6Text.includes('within the same building');
+                const q6IsOutsideBuilding = q6Text.includes('outside the building');
+                const q6IsUnknown = q6Text.includes('unknown');
+
+                // Always enable Q6 Unknown option
+                if (q6IsUnknown) {
+                    input.disabled = false;
+                    return;
+                }
+
+                // Apply Q4-specific logic based on manual specification
+                let isValid = false;
+
+                if (q4Value === 3.0) {
+                    // Q4: >100m - Enable: 1.0, 2.0, Unknown only
+                    isValid = (q6Value === 1.0 || q6Value === 2.0);
+                } else if (q4Value === 6.0) {
+                    // Q4: 20-100m - Enable: 1.0, 2.0, 5.0, Unknown
+                    isValid = (q6Value === 1.0 || q6Value === 2.0 || q6Value === 5.0);
+                } else if (q4Value === 7.0) {
+                    // Q4: 5-20m - Enable: 1.0, 2.0, 5.0, 8.0, Unknown
+                    isValid = (q6Value === 1.0 || q6Value === 2.0 || q6Value === 5.0 || q6Value === 8.0);
+                } else if (q4Value === 8.0 && q4IsSoleOccupant) {
+                    // Q4: 0-5m sole occupant - Enable: 1.0, 2.0, 5.0, 8.0, 9.0 (outside), Unknown
+                    // Disable: 10.0 (within building)
+                    if (q6IsWithinBuilding) {
+                        isValid = false;
+                    } else {
+                        isValid = (q6Value === 1.0 || q6Value === 2.0 || q6Value === 5.0 || q6Value === 8.0 || q6Value === 9.0);
+                    }
+                }
+
+                if (!isValid) {
+                    input.disabled = true;
+                    if (input.checked) {
+                        input.checked = false;
+                        const parent = input.closest('.option');
+                        if (parent) parent.classList.remove('selected');
+                    }
+                } else {
+                    input.disabled = false;
+                }
+            });
+        }
+
+        function handleQuestion5_1() {
+            const q5Selected = document.querySelector('input[name="q5"]:checked');
+            const q5_1Inputs = document.querySelectorAll('input[name="q5.1"]');
+
+            if (q5Selected && parseFloat(q5Selected.value) === 5.0) {
+                // Q5 = "Yes. Including FN" OR "Unknown" - enable FN type options
+                q5_1Inputs.forEach(input => {
+                    input.disabled = false;
+                });
+            } else {
+                // Q5 = "U.S. citizens only" OR "No" - disable FN type options
+                q5_1Inputs.forEach(input => {
+                    input.disabled = true;
+                    input.checked = false;
+                    const parent = input.closest('.option');
+                    if (parent) parent.classList.remove('selected');
+                });
+            }
+        }
+
+        function handleQuestion7_1() {
+            const q7Selected = document.querySelector('input[name="q7"]:checked');
+            const q7_1Inputs = document.querySelectorAll('input[name="q7.1"]');
+
+            if (q7Selected && parseFloat(q7Selected.value) === 0.0) {
+                // Q7 = No line of sight, FN access not applicable
+                q7_1Inputs.forEach(input => {
+                    input.disabled = true;
+                    input.checked = false;
+                    const parent = input.closest('.option');
+                    if (parent) parent.classList.remove('selected');
+                });
+            } else if (q7Selected) {
+                // Q7 = Line of sight exists, show FN access options
+                q7_1Inputs.forEach(input => {
+                    input.disabled = false;
+                });
+            } else {
+                // No Q7 selected yet, disable Q7.1
+                q7_1Inputs.forEach(input => {
+                    input.disabled = true;
+                    input.checked = false;
+                    const parent = input.closest('.option');
+                    if (parent) parent.classList.remove('selected');
+                });
+            }
+        }
+
+        window.onload = function() {
+            // Show classification modal on load
+            setTimeout(showClassificationModal, 500);
+
+            // Initialize conditional question states
+            updateConditionalQuestions();
+
+            // Set up image upload handler
+            const uploadInput = document.getElementById('plotPlanUpload');
+            if (uploadInput) {
+                uploadInput.addEventListener('change', function(e) {
+                    handleImageUpload(e.target.files);
+                });
+            }
+
+            // Set up paste handler for the plot plan section
+            document.addEventListener('paste', handlePaste);
+        };
+    </script>
+</body>
+</html>
